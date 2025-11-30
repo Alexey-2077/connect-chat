@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connect Chat - Чат рулетка для студентов вуза</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <!-- Навигация -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <i class="fas fa-arrow-right"></i>
+                <span>Connect Chat</span>
+            </div>
+            <div class="nav-menu">
+                <a href="#home" class="nav-link active">Главная</a>
+                <a href="#about" class="nav-link">О нас</a>
+                <a href="#referral" class="nav-link">Пригласить друзей</a>
+                <a href="#contact" class="nav-link">Контакты</a>
+                <button class="btn-primary nav-btn">Войти</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Главная секция -->
+    <section id="home" class="hero">
+        <div class="hero-container">
+            <div class="hero-content">
+                <h1 class="hero-title">
+                    Чат рулетка для <span class="highlight">студентов</span> твоего вуза
+                </h1>
+                <p class="hero-subtitle">
+                    Connect Chat - случайные видеозвонки и чаты только со студентами. Общайся с однокурсниками,
+                    находи единомышленников и заводи новые знакомства в безопасной среде!
+                </p>
+                <div class="hero-stats">
+                    <div class="stat">
+                        <div class="stat-number">500+</div>
+                        <div class="stat-label">Онлайн студентов</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-number">1000+</div>
+                        <div class="stat-label">Чатов в день</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-number">24/7</div>
+                        <div class="stat-label">Доступность</div>
+                    </div>
+                </div>
+                <div class="hero-buttons">
+                    <button type="button" class="btn-primary btn-large" id="createProfileBtn">
+                        <i class="fas fa-user-plus"></i>
+                        Создать профиль
+                    </button>
+                    <button type="button" class="btn-secondary btn-large" id="findPairBtn">
+                        <i class="fas fa-random"></i>
+                        Начать чат
+                    </button>
+                </div>
+            </div>
+            <div class="hero-image">
+                <div class="floating-cards">
+                    <div class="card card-1">
+                        <img src="images/anna.jpg" alt="Профиль 1" onerror="this.src='https://i.pravatar.cc/300?img=33'">
+                        <div class="card-info">
+                            <h4>Анна, 20</h4>
+                            <p>2 курс, Дизайн</p>
+                        </div>
+                    </div>
+                    <div class="card card-2">
+                        <img src="images/elena.jpg" alt="Профиль 2" onerror="this.src='https://i.pravatar.cc/300?img=12'">
+                        <div class="card-info">
+                            <h4>Максим, 21</h4>
+                            <p>3 курс, Программирование</p>
+                        </div>
+                    </div>
+                    <div class="card card-3">
+                        <img src="images/maxim.jpg" alt="Профиль 3" onerror="this.src='https://i.pravatar.cc/300?img=47'">
+                        <div class="card-info">
+                            <h4>Елена, 19</h4>
+                            <p>1 курс, Маркетинг</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- О нас -->
+    <section id="about" class="about">
+        <div class="container">
+            <h2 class="section-title">Почему Connect Chat?</h2>
+            <div class="about-grid">
+                <div class="about-card">
+                    <div class="about-icon">
+                        <i class="fas fa-graduation-cap"></i>
+                    </div>
+                    <h3>Только студенты</h3>
+                    <p>Чат рулетка работает только для студентов твоего вуза. Верификация через студенческий билет гарантирует безопасность.</p>
+                </div>
+                <div class="about-card">
+                    <div class="about-icon">
+                        <i class="fas fa-random"></i>
+                    </div>
+                    <h3>Случайные знакомства</h3>
+                    <p>Крути рулетку и общайся со случайными студентами. Каждый раз новая встреча и новые возможности!</p>
+                </div>
+                <div class="about-card">
+                    <div class="about-icon">
+                        <i class="fas fa-video"></i>
+                    </div>
+                    <h3>Видео и текст чаты</h3>
+                    <p>Выбирай формат общения: видеозвонок или текстовый чат. Общайся так, как тебе удобно!</p>
+                </div>
+                <div class="about-card">
+                    <div class="about-icon">
+                        <i class="fas fa-shield-alt"></i>
+                    </div>
+                    <h3>Безопасность</h3>
+                    <p>Модерация контента, возможность пожаловаться и заблокировать. Твоя безопасность - наш приоритет.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Реферальная система -->
+    <section id="referral" class="referral">
+        <div class="container">
+            <div class="referral-content">
+                <div class="referral-text">
+                    <h2 class="section-title">Пригласи однокурсников и получи бонусы</h2>
+                    <p class="referral-description">
+                        Каждый приглашенный студент приносит вам баллы, которые можно обменять на премиум-функции.
+                        Твои друзья тоже получают бонусы за регистрацию!
+                    </p>
+                    <div class="referral-steps">
+                        <div class="step">
+                            <div class="step-number">1</div>
+                            <div class="step-text">
+                                <h4>Поделись ссылкой</h4>
+                                <p>Получи уникальную реферальную ссылку</p>
+                            </div>
+                        </div>
+                        <div class="step">
+                            <div class="step-number">2</div>
+                            <div class="step-text">
+                                <h4>Однокурсники регистрируются</h4>
+                                <p>Твои друзья создают профили по ссылке</p>
+                            </div>
+                        </div>
+                        <div class="step">
+                            <div class="step-number">3</div>
+                            <div class="step-text">
+                                <h4>Получай бонусы</h4>
+                                <p>За каждого друга +100 баллов в твой счет</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="referral-form">
+                    <div class="referral-card">
+                        <h3>Ваша реферальная ссылка</h3>
+                        <div class="referral-link">
+                            <input type="text" value="loveconnect.ru/ref/anna123" readonly id="referralLink">
+                            <button class="btn-copy" onclick="copyReferralLink()">
+                                <i class="fas fa-copy"></i>
+                                Копировать
+                            </button>
+                        </div>
+                        <div class="referral-stats">
+                            <div class="stat-item">
+                                <span class="stat-value">12</span>
+                                <span class="stat-label">Приглашенных студентов</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-value">1200</span>
+                                <span class="stat-label">Баллов заработано</span>
+                            </div>
+                        </div>
+                        <button class="btn-primary">Поделиться в соцсетях</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Контакты -->
+    <section id="contact" class="contact">
+        <div class="container">
+            <h2 class="section-title">Свяжитесь с нами</h2>
+            <div class="contact-grid">
+                <div class="contact-form">
+                    <form id="contactForm">
+                        <div class="form-group">
+                            <input type="text" name="name" placeholder="Ваше имя" required>
+                        </div>
+                        <div class="form-group">
+                            <input type="email" name="email" placeholder="Email" required>
+                        </div>
+                        <div class="form-group">
+                            <textarea name="message" placeholder="Сообщение" rows="5" required></textarea>
+                        </div>
+                        <button type="submit" class="btn-primary">Отправить</button>
+                    </form>
+                </div>
+                <div class="contact-info">
+                    <div class="contact-item">
+                        <i class="fas fa-envelope"></i>
+                        <div>
+                            <h4>Email</h4>
+                            <p> mail@loveconnect.ru </p>
+                        </div>
+                    </div>
+                    <div class="contact-item">
+                        <i class="fas fa-phone"></i>
+                        <div>
+                            <h4>Телефон</h4>
+                            <p> Номер  </p>
+                        </div>
+                    </div>
+                    <div class="contact-item">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <div>
+                            <h4>Адрес</h4>
+                            <p> Краснодар, ул. Ставропольская, д. 149</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Футер -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <i class="fas fa-arrow-right"></i>
+                    <span>Connect Chat</span>
+                </div>
+                <div class="footer-links">
+                    <a href="#about">О нас</a>
+                    <a href="#referral">Рефералы</a>
+                    <a href="#contact">Контакты</a>
+                    <a href="#">Политика конфиденциальности</a>
+                </div>
+                <div class="footer-social">
+                    <a href="#" class="social-link"><i class="fab fa-vk"></i></a>
+                    <a href="#" class="social-link"><i class="fab fa-telegram"></i></a>
+                    <a href="#" class="social-link"><i class="fab fa-instagram"></i></a>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 Connect Chat. Все права защищены.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Модальное окно входа -->
+    <div id="loginModal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close">&times;</span>
+            <div class="modal-header">
+                <i class="fas fa-arrow-right"></i>
+                <h2>Вход в Connect Chat</h2>
+            </div>
+            <form id="loginForm" class="login-form">
+                <div class="form-group">
+                    <label for="loginEmail">Email или телефон</label>
+                    <input type="text" id="loginEmail" name="email" placeholder="Введите email или телефон" required>
+                </div>
+                <div class="form-group">
+                    <label for="loginPassword">Пароль</label>
+                    <input type="password" id="loginPassword" name="password" placeholder="Введите пароль" required>
+                </div>
+                <div class="form-options">
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="remember">
+                        <span>Запомнить меня</span>
+                    </label>
+                    <a href="#" class="forgot-password">Забыли пароль?</a>
+                </div>
+                <button type="submit" class="btn-primary btn-full">Войти</button>
+                <div class="form-divider">
+                    <span>или</span>
+                </div>
+                <div class="social-login">
+                    <button type="button" class="btn-social vk">
+                        <i class="fab fa-vk"></i>
+                        Войти через VK
+                    </button>
+                    <button type="button" class="btn-social telegram">
+                        <i class="fab fa-telegram"></i>
+                        Войти через Telegram
+                    </button>
+                </div>
+                <div class="form-footer">
+                    <p>Нет аккаунта? <a href="#" id="switchToRegister">Зарегистрироваться</a></p>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
