@@ -1,7 +1,7 @@
 /* ... (предыдущие стили) ... */
 
 @media (max-width: 768px) {
-    /* ... (предыдущие стили) ... */
+    /* ... (стили для планшетов без изменений) ... */
     .hero-container {
         flex-direction: column;
         text-align: center;
@@ -50,30 +50,12 @@
         padding: 12px 20px;
     }
     
-    .hero-image {
-        display: none; 
-    }
-    
-    .nav-menu {
-        display: none; 
-    }
-    
-    .contact-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .about-grid {
-        grid-template-columns: 1fr; 
-    }
-
-    .referral-content {
-        flex-direction: column;
-    }
-
-    .footer-content {
-        flex-direction: column;
-        text-align: center;
-    }
+    .hero-image { display: none; }
+    .nav-menu { display: none; }
+    .contact-grid { grid-template-columns: 1fr; }
+    .about-grid { grid-template-columns: 1fr; }
+    .referral-content { flex-direction: column; }
+    .footer-content { flex-direction: column; text-align: center; }
 }
 
 @media (max-width: 480px) {
@@ -145,6 +127,7 @@
         height: auto; /* Сбрасываем фиксированную высоту */
         margin: 10px 0;
         max-height: calc(100vh - 140px); /* Ограничиваем высоту */
+        min-height: 0; /* Позволяем сжиматься */
     }
 
     .profile-card {
@@ -152,16 +135,21 @@
         box-shadow: 0 4px 15px rgba(0,0,0,0.05);
         border: none;
         height: 100%;
+        display: flex;
+        flex-direction: column;
     }
 
     .profile-image-wrapper {
         height: 55%; /* Уменьшаем фото, чтобы влез текст */
-        min-height: 200px;
+        min-height: 0; /* Позволяем сжиматься */
+        flex-shrink: 1;
     }
     
     .profile-info-content {
         padding: 15px;
         justify-content: flex-start;
+        flex: 1;
+        overflow-y: auto; /* Если текст слишком длинный */
     }
     
     .profile-info-content h3 {
@@ -173,7 +161,7 @@
         font-size: 0.85rem;
         display: -webkit-box;
         -webkit-line-clamp: 3;
-        line-clamp: 3; /* Added for compatibility */
+        line-clamp: 3;
         -webkit-box-orient: vertical;
         overflow: hidden;
     }
