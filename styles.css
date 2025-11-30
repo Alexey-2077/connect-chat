@@ -78,6 +78,7 @@ ul {
 .btn-secondary:hover {
     background: #fff5f5;
     transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
 }
 
 .btn-full {
@@ -1048,52 +1049,134 @@ section {
     transform: scale(1.05);
 }
 
+/* --- АДАПТИВНОСТЬ --- */
+
 @media (max-width: 768px) {
     .hero-container {
         flex-direction: column;
         text-align: center;
-        padding-top: 100px;
+        padding-top: 40px;
+        padding-bottom: 40px;
     }
     
     .hero-content {
-        margin-bottom: 40px;
+        margin-bottom: 20px;
+        max-width: 100%;
+    }
+
+    .hero-title {
+        font-size: 2rem;
+    }
+
+    .hero-subtitle {
+        font-size: 1rem;
+        margin-bottom: 20px;
     }
     
     .hero-stats {
         justify-content: center;
+        margin-bottom: 20px;
+        gap: 20px;
+    }
+
+    .stat-number {
+        font-size: 1.4rem;
     }
     
     .hero-buttons {
         justify-content: center;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .btn-large {
+        width: 100%;
     }
     
+    /* Скрываем декоративные карточки на мобильных */
     .hero-image {
-        width: 100%;
-        height: 400px;
+        display: none; 
     }
     
     .nav-menu {
-        display: none; /* Упрощено для мобильных */
+        display: none; 
     }
     
     .contact-grid {
         grid-template-columns: 1fr;
     }
+
+    .about-grid {
+        grid-template-columns: 1fr; 
+    }
+
+    .referral-content {
+        flex-direction: column;
+    }
+
+    .footer-content {
+        flex-direction: column;
+        text-align: center;
+    }
 }
 
 @media (max-width: 480px) {
-    .hero-title { font-size: 2rem; }
-    .matching-modal-content { padding: 20px 10px; }
-    .profile-card-container { height: 400px; }
-    .profile-image-wrapper { height: 260px; }
-    .pair-card { flex-direction: column; text-align: center; }
-    .pair-actions { justify-content: center; }
+    .hero-title { font-size: 1.8rem; }
+    .container { padding: 0 15px; }
+    .section-title { font-size: 1.5rem; margin-bottom: 30px; }
     
+    /* Адаптация модальных окон */
+    .matching-modal-content, 
+    .modal-content,
+    .pairs-modal-content { 
+        padding: 20px 15px; 
+        margin: 10px;
+        width: 95%;
+        max-height: 90vh;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .profile-card-container { 
+        flex: 1;
+        height: auto;
+        min-height: 350px; /* Минимальная высота для карточки */
+        margin: 10px 0;
+    }
+    
+    .profile-image-wrapper { 
+        height: 60%; /* Относительная высота фото */
+    }
+
+    .profile-card {
+        border-radius: 15px;
+    }
+
+    /* Адаптация кнопок в карточке пары */
+    .pair-card { 
+        flex-direction: column; 
+        text-align: center; 
+        padding: 15px 10px;
+    }
+    
+    .pair-actions { 
+        justify-content: center; 
+        width: 100%; 
+        flex-direction: column;
+    }
+
+    .btn-small {
+        width: 100%;
+    }
+    
+    /* Чат на весь экран */
     .chat-window {
         width: 100%;
         height: 100%;
         bottom: 0;
         right: 0;
         border-radius: 0;
+        z-index: 9999;
     }
 }
