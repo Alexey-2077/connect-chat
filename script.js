@@ -87,32 +87,15 @@ function setupLoginModal() {
     if (loginForm) {
         loginForm.addEventListener('submit', function(e) {
             e.preventDefault();
+            const email = this.querySelector('input[type="email"]').value;
+            const password = this.querySelector('input[type="password"]').value;
             
-            // Ищем поля по ID, так как типы могут отличаться (text vs email)
-            const emailInput = document.getElementById('loginEmail');
-            const passwordInput = document.getElementById('loginPassword');
-            
-            if (emailInput && passwordInput) {
-                const email = emailInput.value;
-                const password = passwordInput.value;
-                
-                // Имитация входа
-                if (email && password) {
-                    handleSuccessfulLogin(email);
-                } else {
-                    showNotification('Пожалуйста, заполните все поля', 'error');
-                }
-            } else {
-                // Запасной вариант поиска, если ID не сработают
-                const emailVal = this.querySelector('input[name="email"]')?.value;
-                const passVal = this.querySelector('input[name="password"]')?.value;
-                
-                if (emailVal && passVal) {
-                    handleSuccessfulLogin(emailVal);
-                }
-            }
-        });
-    }
+            // Имитация входа
+            if (email && password) {
+                handleSuccessfulLogin(email);
+        }
+    });
+}
 
     if (closeBtn) {
         closeBtn.addEventListener('click', closeLoginModal);
