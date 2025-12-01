@@ -87,8 +87,9 @@ function setupLoginModal() {
     if (loginForm) {
         loginForm.addEventListener('submit', function(e) {
             e.preventDefault();
+            console.log('Login form submitted (v3)'); // Лог для проверки
             
-            // ИСПРАВЛЕНО: Используем getElementById, так как type="text", а не "email"
+            // ИСПРАВЛЕНО v3: Ищем поля по ID
             const emailInput = document.getElementById('loginEmail');
             const passwordInput = document.getElementById('loginPassword');
             
@@ -103,8 +104,16 @@ function setupLoginModal() {
                     showNotification('Пожалуйста, заполните все поля', 'error');
                 }
             } else {
-                console.error('Критическая ошибка: поля входа не найдены в DOM');
-                showNotification('Ошибка интерфейса: обновите страницу', 'error');
+                console.error('CRITICAL ERROR: Login inputs not found');
+                // Попытка найти через querySelector как запасной вариант (но правильно)
+                const altEmail = this.querySelector('input[name="email"]');
+                const altPass = this.querySelector('input[name="password"]');
+                
+                if (altEmail && altPass && altEmail.value && altPass.value) {
+                     handleSuccessfulLogin(altEmail.value);
+                } else {
+                     showNotification('Ошибка: поля не найдены. Обновите страницу.', 'error');
+                }
             }
         });
     }
