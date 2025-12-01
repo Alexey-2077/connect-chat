@@ -87,36 +87,15 @@ function setupLoginModal() {
     if (loginForm) {
         loginForm.addEventListener('submit', function(e) {
             e.preventDefault();
-            console.log('Login form submitted (v3)'); // Лог для проверки
+            const email = this.querySelector('input[type="email"]').value;
+            const password = this.querySelector('input[type="password"]').value;
             
-            // ИСПРАВЛЕНО v3: Ищем поля по ID
-            const emailInput = document.getElementById('loginEmail');
-            const passwordInput = document.getElementById('loginPassword');
-            
-            if (emailInput && passwordInput) {
-                const email = emailInput.value;
-                const password = passwordInput.value;
-                
-                // Имитация входа
-                if (email && password) {
-                    handleSuccessfulLogin(email);
-                } else {
-                    showNotification('Пожалуйста, заполните все поля', 'error');
-                }
-            } else {
-                console.error('CRITICAL ERROR: Login inputs not found');
-                // Попытка найти через querySelector как запасной вариант (но правильно)
-                const altEmail = this.querySelector('input[name="email"]');
-                const altPass = this.querySelector('input[name="password"]');
-                
-                if (altEmail && altPass && altEmail.value && altPass.value) {
-                     handleSuccessfulLogin(altEmail.value);
-                } else {
-                     showNotification('Ошибка: поля не найдены. Обновите страницу.', 'error');
-                }
-            }
-        });
-    }
+            // Имитация входа
+            if (email && password) {
+                handleSuccessfulLogin(email);
+        }
+    });
+}
 
     if (closeBtn) {
         closeBtn.addEventListener('click', closeLoginModal);
