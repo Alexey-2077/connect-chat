@@ -87,15 +87,26 @@ function setupLoginModal() {
     if (loginForm) {
         loginForm.addEventListener('submit', function(e) {
             e.preventDefault();
-            const email = this.querySelector('input[type="email"]').value;
-            const password = this.querySelector('input[type="password"]').value;
             
-            // Имитация входа
-            if (email && password) {
-                handleSuccessfulLogin(email);
-        }
-    });
-}
+            // ИСПРАВЛЕНО: Используем getElementById, так как поле имеет type="text"
+            const emailInput = document.getElementById('loginEmail');
+            const passwordInput = document.getElementById('loginPassword');
+            
+            if (emailInput && passwordInput) {
+                const email = emailInput.value.trim();
+                const password = passwordInput.value.trim();
+                
+                if (email && password) {
+                    handleSuccessfulLogin(email);
+                } else {
+                    showNotification('Пожалуйста, заполните все поля', 'error');
+                }
+            } else {
+                console.error('Login inputs not found!');
+                showNotification('Ошибка загрузки формы. Обновите страницу.', 'error');
+            }
+        });
+    }
 
     if (closeBtn) {
         closeBtn.addEventListener('click', closeLoginModal);
