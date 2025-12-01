@@ -669,6 +669,21 @@ section {
     flex-direction: column;
     transition: transform 0.3s ease, opacity 0.3s ease;
     border: 1px solid #eaeaea;
+    cursor: grab;
+    user-select: none;
+    touch-action: pan-y;
+}
+
+.profile-card:active {
+    cursor: grabbing;
+}
+
+.profile-card.swiping-right {
+    box-shadow: 0 10px 30px rgba(46, 204, 113, 0.3);
+}
+
+.profile-card.swiping-left {
+    box-shadow: 0 10px 30px rgba(231, 76, 60, 0.3);
 }
 
 .profile-image-wrapper {
@@ -731,6 +746,50 @@ section {
     font-weight: 600;
     margin-bottom: 10px;
     font-size: 1rem;
+}
+
+/* Контейнер для биографии */
+.bio-container {
+    margin-top: 15px;
+    background: #2c3e50;
+    border-radius: 12px;
+    padding: 12px 15px;
+    position: relative;
+    text-align: left;
+}
+
+.bio-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.bio-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #fff;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.bio-edit-icon {
+    font-size: 0.85rem;
+    color: #95a5a6;
+    cursor: pointer;
+    transition: color 0.3s ease;
+    padding: 4px;
+}
+
+.bio-edit-icon:hover {
+    color: #fff;
+}
+
+.bio-content {
+    font-size: 0.9rem;
+    color: #fff;
+    line-height: 1.5;
+    margin: 0;
 }
 
 .profile-bio {
@@ -964,7 +1023,7 @@ section {
 }
 
 .chat-controls button:hover {
-    opacity: 1;
+        opacity: 1;
 }
 
 .chat-messages {
@@ -1270,6 +1329,23 @@ section {
         font-size: 1.3rem;
         margin-bottom: 5px;
     }
+
+    .bio-container {
+        margin-top: 12px;
+        padding: 10px 12px;
+    }
+    
+    .bio-title {
+        font-size: 0.8rem;
+    }
+    
+    .bio-content {
+        font-size: 0.85rem;
+    }
+    
+    .bio-edit-icon {
+        font-size: 0.75rem;
+    }
     
     .profile-bio {
         font-size: 0.85rem;
@@ -1287,7 +1363,7 @@ section {
         gap: 20px;
         flex-shrink: 0; /* Не сжимать кнопки */
     }
-    
+
     .control-btn {
         width: 56px;
         height: 56px;

@@ -87,15 +87,22 @@ function setupLoginModal() {
     if (loginForm) {
         loginForm.addEventListener('submit', function(e) {
             e.preventDefault();
-            const email = this.querySelector('input[type="email"]').value;
-            const password = this.querySelector('input[type="password"]').value;
+            const emailInput = document.getElementById('loginEmail');
+            const passwordInput = document.getElementById('loginPassword');
             
-            // Имитация входа
-            if (email && password) {
-                handleSuccessfulLogin(email);
-        }
-    });
-}
+            if (emailInput && passwordInput) {
+                const email = emailInput.value;
+                const password = passwordInput.value;
+                
+                // Имитация входа
+                if (email && password) {
+                    handleSuccessfulLogin(email);
+                } else {
+                    showNotification('Пожалуйста, заполните все поля', 'error');
+                }
+            }
+        });
+    }
 
     if (closeBtn) {
         closeBtn.addEventListener('click', closeLoginModal);
@@ -106,9 +113,9 @@ function setupLoginModal() {
         modal.addEventListener('click', function(e) {
             if (e.target === modal) {
                 closeLoginModal();
-            }
-        });
-    }
+        }
+    });
+}
 
     // Обработка кнопок соц. сетей
     const socialButtons = document.querySelectorAll('.social-btn');
@@ -185,12 +192,12 @@ function openFindPairModal() {
 }
 
 let matchingProfiles = [
-    { name: 'Анна', age: 20, course: 2, specialty: 'Дизайн', image: 'images/anna.jpg' },
-    { name: 'Елена', age: 19, course: 1, specialty: 'Маркетинг', image: 'images/elena.jpg' },
-    { name: 'Мария', age: 21, course: 3, specialty: 'Фотография', image: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=300&h=300&fit=crop&crop=face' },
-    { name: 'София', age: 20, course: 2, specialty: 'Психология', image: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&h=300&fit=crop&crop=face' },
-    { name: 'Виктория', age: 22, course: 4, specialty: 'Юриспруденция', image: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=300&h=300&fit=crop&crop=face' },
-    { name: 'Максим', age: 21, course: 3, specialty: 'Медицина', image: 'images/maxim.jpg' }
+    { name: 'Анна', age: 20, course: 2, specialty: 'Дизайн', image: 'images/anna.jpg', bio: 'Соглашусь на свидание в театре' },
+    { name: 'Елена', age: 19, course: 1, specialty: 'Маркетинг', image: 'images/elena.jpg', bio: 'Люблю активный отдых и новые знакомства' },
+    { name: 'Мария', age: 21, course: 3, specialty: 'Фотография', image: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=300&h=300&fit=crop&crop=face', bio: 'Фотограф-любитель, ищу единомышленников' },
+    { name: 'София', age: 20, course: 2, specialty: 'Психология', image: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&h=300&fit=crop&crop=face', bio: 'Интересуюсь психологией и саморазвитием' },
+    { name: 'Виктория', age: 22, course: 4, specialty: 'Юриспруденция', image: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=300&h=300&fit=crop&crop=face', bio: 'Будущий юрист, люблю спорт и книги' },
+    { name: 'Максим', age: 21, course: 3, specialty: 'Медицина', image: 'images/maxim.jpg', bio: 'Медик, увлекаюсь наукой и путешествиями' }
 ];
 
 let currentProfileIndex = 0;
@@ -258,9 +265,10 @@ function renderProfileCard() {
     if (!container) return;
     
     const profile = matchingProfiles[currentProfileIndex];
+    const bio = profile.bio || 'Студент(ка) вуза. Ищу общение по интересам.';
     
     container.innerHTML = `
-        <div class="profile-card fade-in">
+        <div class="profile-card fade-in" id="currentProfileCard">
             <div class="profile-image-wrapper">
                 <img src="${profile.image}" alt="${profile.name}" onerror="this.src='https://i.pravatar.cc/300?img=${currentProfileIndex + 1}'">
                 <div class="profile-badges">
@@ -270,10 +278,21 @@ function renderProfileCard() {
             <div class="profile-info-content">
                 <h3>${profile.name}, ${profile.age}</h3>
                 <p class="profile-details">${profile.course} курс, ${profile.specialty}</p>
-                <p class="profile-bio">Студент(ка) вуза. Ищу общение по интересам.</p>
+                <div class="bio-container">
+                    <div class="bio-header">
+                        <span class="bio-title">Био</span>
+                        <i class="fas fa-pencil-alt bio-edit-icon"></i>
+                    </div>
+                    <div class="bio-content">
+                        ${bio}
+                    </div>
+                </div>
             </div>
         </div>
     `;
+    
+    // Инициализируем свайп для новой карточки
+    initSwipeHandlers();
 }
 
 function nextProfile() {
@@ -308,6 +327,121 @@ function closeMatchingModal() {
         matchingModal.remove();
         document.body.style.overflow = 'auto';
     }
+}
+
+// Функциональность свайпа для карточек
+let swipeStartX = 0;
+let swipeStartY = 0;
+let swipeCurrentX = 0;
+let swipeCurrentY = 0;
+let isSwiping = false;
+let cardElement = null;
+
+function initSwipeHandlers() {
+    cardElement = document.getElementById('currentProfileCard');
+    if (!cardElement) return;
+    
+    // Touch события для мобильных устройств
+    cardElement.addEventListener('touchstart', handleSwipeStart, { passive: true });
+    cardElement.addEventListener('touchmove', handleSwipeMove, { passive: true });
+    cardElement.addEventListener('touchend', handleSwipeEnd, { passive: true });
+    
+    // Mouse события для десктопа (для тестирования)
+    let isMouseDown = false;
+    cardElement.addEventListener('mousedown', function(e) {
+        isMouseDown = true;
+        handleSwipeStart(e);
+    });
+    cardElement.addEventListener('mousemove', function(e) {
+        if (isMouseDown) {
+            handleSwipeMove(e);
+        }
+    });
+    cardElement.addEventListener('mouseup', function(e) {
+        if (isMouseDown) {
+            isMouseDown = false;
+            handleSwipeEnd(e);
+        }
+    });
+    cardElement.addEventListener('mouseleave', function(e) {
+        if (isMouseDown) {
+            isMouseDown = false;
+            handleSwipeEnd(e);
+        }
+    });
+}
+
+function handleSwipeStart(e) {
+    const touch = e.touches ? e.touches[0] : e;
+    swipeStartX = touch.clientX;
+    swipeStartY = touch.clientY;
+    isSwiping = true;
+    if (cardElement) {
+        cardElement.style.transition = 'none';
+    }
+}
+
+function handleSwipeMove(e) {
+    if (!isSwiping || !cardElement) return;
+    
+    const touch = e.touches ? e.touches[0] : e;
+    swipeCurrentX = touch.clientX - swipeStartX;
+    swipeCurrentY = touch.clientY - swipeStartY;
+    
+    // Вращаем карточку при свайпе
+    const rotation = swipeCurrentX * 0.1;
+    cardElement.style.transform = `translateX(${swipeCurrentX}px) rotate(${rotation}deg)`;
+    
+    // Меняем прозрачность в зависимости от направления
+    const opacity = 1 - Math.abs(swipeCurrentX) / 300;
+    cardElement.style.opacity = Math.max(0.3, opacity);
+    
+    // Добавляем визуальную индикацию направления
+    if (swipeCurrentX > 50) {
+        cardElement.classList.add('swiping-right');
+        cardElement.classList.remove('swiping-left');
+    } else if (swipeCurrentX < -50) {
+        cardElement.classList.add('swiping-left');
+        cardElement.classList.remove('swiping-right');
+    } else {
+        cardElement.classList.remove('swiping-left', 'swiping-right');
+    }
+}
+
+function handleSwipeEnd(e) {
+    if (!isSwiping || !cardElement) return;
+    
+    isSwiping = false;
+    cardElement.style.transition = 'transform 0.3s ease, opacity 0.3s ease';
+    
+    const swipeThreshold = 100; // Минимальное расстояние для свайпа
+    
+    if (Math.abs(swipeCurrentX) > swipeThreshold) {
+        if (swipeCurrentX > 0) {
+            // Свайп вправо - лайк
+            cardElement.style.transform = `translateX(100vw) rotate(30deg)`;
+            cardElement.style.opacity = '0';
+            setTimeout(() => {
+                connectProfile();
+            }, 300);
+        } else {
+            // Свайп влево - пропуск
+            cardElement.style.transform = `translateX(-100vw) rotate(-30deg)`;
+            cardElement.style.opacity = '0';
+            setTimeout(() => {
+                nextProfile();
+            }, 300);
+        }
+    } else {
+        // Возвращаем карточку на место
+        cardElement.style.transform = 'translateX(0) rotate(0deg)';
+        cardElement.style.opacity = '1';
+        cardElement.classList.remove('swiping-left', 'swiping-right');
+    }
+    
+    // Сброс значений
+    swipeCurrentX = 0;
+    swipeCurrentY = 0;
 }
 
 // Делаем функции глобальными
