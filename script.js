@@ -185,12 +185,11 @@ function openFindPairModal() {
 }
 
 let matchingProfiles = [
-    { name: 'Анна', age: 20, course: 2, specialty: 'Дизайн', image: 'images/anna.jpg', bio: 'Соглашусь на свидание в театре' },
-    { name: 'Елена', age: 19, course: 1, specialty: 'Маркетинг', image: 'images/elena.jpg', bio: 'Люблю активный отдых и новые знакомства' },
-    { name: 'Мария', age: 21, course: 3, specialty: 'Фотография', image: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=300&h=300&fit=crop&crop=face', bio: 'Фотограф-любитель, ищу единомышленников' },
-    { name: 'София', age: 20, course: 2, specialty: 'Психология', image: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&h=300&fit=crop&crop=face', bio: 'Интересуюсь психологией и саморазвитием' },
-    { name: 'Виктория', age: 22, course: 4, specialty: 'Юриспруденция', image: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=300&h=300&fit=crop&crop=face', bio: 'Будущий юрист, люблю спорт и книги' },
-    { name: 'Максим', age: 21, course: 3, specialty: 'Медицина', image: 'images/maxim.jpg', bio: 'Медик, увлекаюсь наукой и путешествиями' }
+    { name: 'Анна', age: 20, course: 2, specialty: 'Дизайн', image: 'images/photo_2025-03-28_15-32-38.jpg', bio: 'Соглашусь на свидание в театре' },
+    { name: 'Елена', age: 19, course: 1, specialty: 'Маркетинг', image: 'images/photo_2025-06-22_15-16-30.jpg', bio: 'Люблю активный отдых и новые знакомства' },
+    { name: 'Мария', age: 21, course: 3, specialty: 'Фотография', image: 'images/photo_2025-06-23_16-52-21.jpg', bio: 'Фотограф-любитель, ищу единомышленников' },
+    { name: 'София', age: 20, course: 2, specialty: 'Психология', image: 'images/photo_2025-10-11_02-13-52.jpg', bio: 'Интересуюсь психологией и саморазвитием' },
+    { name: 'Виктория', age: 22, course: 4, specialty: 'Юриспруденция', image: 'images/photo_2025-10-14_13-24-43.jpg', bio: 'Будущий юрист, люблю спорт и книги' }
 ];
 
 let currentProfileIndex = 0;
@@ -222,8 +221,13 @@ function openMatchingInterface() {
                 <!-- Карточка будет добавлена через JS -->
             </div>
             
-            <div class="matching-controls" style="display: none;">
-                <!-- Кнопки скрыты, используется свайп -->
+            <div class="matching-controls">
+                <button class="control-btn btn-skip" onclick="nextProfile()">
+                    <i class="fas fa-times"></i>
+                </button>
+                <button class="control-btn btn-like" onclick="connectProfile()">
+                    <i class="fas fa-heart"></i>
+                </button>
             </div>
         </div>
     `;
@@ -326,20 +330,8 @@ let isSwiping = false;
 let cardElement = null;
 
 function initSwipeHandlers() {
-    // Удаляем старые обработчики, если есть
-    const oldCard = document.getElementById('currentProfileCard');
-    if (oldCard && oldCard._swipeInitialized) {
-        return; // Уже инициализировано
-    }
-    
     cardElement = document.getElementById('currentProfileCard');
-    if (!cardElement) {
-        console.log('Card element not found for swipe');
-        return;
-    }
-    
-    // Помечаем, что инициализировано
-    cardElement._swipeInitialized = true;
+    if (!cardElement) return;
     
     // Touch события для мобильных устройств
     cardElement.addEventListener('touchstart', handleSwipeStart, { passive: true });
@@ -369,8 +361,6 @@ function initSwipeHandlers() {
             handleSwipeEnd(e);
         }
     });
-    
-    console.log('Swipe handlers initialized');
 }
 
 function handleSwipeStart(e) {
