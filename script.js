@@ -87,6 +87,7 @@ function setupLoginModal() {
     if (loginForm) {
         loginForm.addEventListener('submit', function(e) {
             e.preventDefault();
+            // Используем getElementById, так как это надежнее, и в HTML у полей есть ID
             const emailInput = document.getElementById('loginEmail');
             const passwordInput = document.getElementById('loginPassword');
             
