@@ -799,12 +799,9 @@ section {
     margin: 0;
 }
 
-/* Кнопки управления */
+/* Кнопки управления - скрыты, используется свайп */
 .matching-controls {
-    display: flex;
-    justify-content: center;
-    gap: 30px;
-    margin-top: 10px;
+    display: none !important;
 }
 
 .control-btn {

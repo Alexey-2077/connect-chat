@@ -87,26 +87,15 @@ function setupLoginModal() {
     if (loginForm) {
         loginForm.addEventListener('submit', function(e) {
             e.preventDefault();
+            const email = this.querySelector('input[type="email"]').value;
+            const password = this.querySelector('input[type="password"]').value;
             
-            // ИСПРАВЛЕНО: Используем getElementById, так как поле имеет type="text"
-            const emailInput = document.getElementById('loginEmail');
-            const passwordInput = document.getElementById('loginPassword');
-            
-            if (emailInput && passwordInput) {
-                const email = emailInput.value.trim();
-                const password = passwordInput.value.trim();
-                
-                if (email && password) {
-                    handleSuccessfulLogin(email);
-                } else {
-                    showNotification('Пожалуйста, заполните все поля', 'error');
-                }
-            } else {
-                console.error('Login inputs not found!');
-                showNotification('Ошибка загрузки формы. Обновите страницу.', 'error');
-            }
-        });
-    }
+            // Имитация входа
+            if (email && password) {
+                handleSuccessfulLogin(email);
+        }
+    });
+}
 
     if (closeBtn) {
         closeBtn.addEventListener('click', closeLoginModal);
@@ -233,13 +222,8 @@ function openMatchingInterface() {
                 <!-- Карточка будет добавлена через JS -->
             </div>
             
-            <div class="matching-controls">
-                <button class="control-btn btn-skip" onclick="nextProfile()">
-                    <i class="fas fa-times"></i>
-                </button>
-                <button class="control-btn btn-like" onclick="connectProfile()">
-                    <i class="fas fa-heart"></i>
-                </button>
+            <div class="matching-controls" style="display: none;">
+                <!-- Кнопки скрыты, используется свайп -->
             </div>
         </div>
     `;
@@ -342,8 +326,20 @@ let isSwiping = false;
 let cardElement = null;
 
 function initSwipeHandlers() {
+    // Удаляем старые обработчики, если есть
+    const oldCard = document.getElementById('currentProfileCard');
+    if (oldCard && oldCard._swipeInitialized) {
+        return; // Уже инициализировано
+    }
+    
     cardElement = document.getElementById('currentProfileCard');
-    if (!cardElement) return;
+    if (!cardElement) {
+        console.log('Card element not found for swipe');
+        return;
+    }
+    
+    // Помечаем, что инициализировано
+    cardElement._swipeInitialized = true;
     
     // Touch события для мобильных устройств
     cardElement.addEventListener('touchstart', handleSwipeStart, { passive: true });
@@ -373,6 +369,8 @@ function initSwipeHandlers() {
             handleSwipeEnd(e);
         }
     });
+    
+    console.log('Swipe handlers initialized');
 }
 
 function handleSwipeStart(e) {
