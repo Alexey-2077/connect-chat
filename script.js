@@ -1,3 +1,82 @@
+// Управление экраном загрузки
+function initLoadingScreen() {
+    const loadingScreen = document.getElementById('loadingScreen');
+    const hasSeenLoading = sessionStorage.getItem('hasSeenLoading');
+    
+    // Показываем экран загрузки только при первом запуске в этой сессии
+    if (!hasSeenLoading && loadingScreen) {
+        document.body.classList.add('loading');
+        loadingScreen.classList.remove('hidden');
+        
+        // Ждем загрузки всех ресурсов
+        const images = document.querySelectorAll('img');
+        const imagesToLoad = Array.from(images).filter(img => !img.complete);
+        
+        let loadedImages = 0;
+        const totalImages = imagesToLoad.length;
+        
+        // Если нет изображений для загрузки, просто ждем минимальное время
+        if (totalImages === 0) {
+            setTimeout(() => {
+                hideLoadingScreen();
+            }, 800); // Минимальное время показа для плавности
+            return;
+        }
+        
+        // Отслеживаем загрузку изображений
+        imagesToLoad.forEach(img => {
+            img.addEventListener('load', () => {
+                loadedImages++;
+                if (loadedImages === totalImages) {
+                    setTimeout(() => {
+                        hideLoadingScreen();
+                    }, 300);
+                }
+            });
+            
+            img.addEventListener('error', () => {
+                loadedImages++;
+                if (loadedImages === totalImages) {
+                    setTimeout(() => {
+                        hideLoadingScreen();
+                    }, 300);
+                }
+            });
+        });
+        
+        // Таймаут на случай, если что-то не загрузится
+        setTimeout(() => {
+            hideLoadingScreen();
+        }, 3000);
+    } else if (loadingScreen) {
+        // Если уже видели загрузку, сразу скрываем
+        loadingScreen.classList.add('hidden');
+    }
+}
+
+function hideLoadingScreen() {
+    const loadingScreen = document.getElementById('loadingScreen');
+    if (loadingScreen) {
+        loadingScreen.classList.add('hidden');
+        document.body.classList.remove('loading');
+        sessionStorage.setItem('hasSeenLoading', 'true');
+        
+        // Удаляем элемент из DOM после анимации
+        setTimeout(() => {
+            if (loadingScreen.parentNode) {
+                loadingScreen.remove();
+            }
+        }, 500);
+    }
+}
+
+// Запускаем экран загрузки сразу при загрузке скрипта
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initLoadingScreen);
+} else {
+    initLoadingScreen();
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     // Инициализация Telegram WebApp
     if (window.Telegram && window.Telegram.WebApp) {
