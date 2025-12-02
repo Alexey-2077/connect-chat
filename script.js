@@ -158,7 +158,7 @@ function openRegisterModal() {
                 behavior: 'smooth'
             });
         }
-    }, 300);
+    }, 150); // Уменьшили с 300ms до 150ms
 }
 
 // Модальное окно поиска пары
@@ -180,19 +180,45 @@ function openFindPairModal() {
                     behavior: 'smooth'
                 });
             }
-        }, 300);
+        }, 150); // Уменьшили с 300ms до 150ms
     }
 }
 
 let matchingProfiles = [
     { name: 'Анна', age: 20, course: 2, specialty: 'Дизайн', image: 'images/photo_2025-03-28_15-32-38.jpg', bio: 'Соглашусь на свидание в театре' },
     { name: 'Елена', age: 19, course: 1, specialty: 'Маркетинг', image: 'images/photo_2025-06-22_15-16-30.jpg', bio: 'Люблю активный отдых и новые знакомства' },
-    { name: 'Мария', age: 21, course: 3, specialty: 'Фотография', image: 'images/photo_2025-06-23_16-52-21.jpg', bio: 'Фотограф-любитель, ищу единомышленников' },
+    { name: 'Дмитрий', age: 21, course: 3, specialty: 'Фотография', image: 'images/photo_2025-06-23_16-52-21.jpg', bio: 'Увлекаюсь фотографией и видеосъемкой. Ищу единомышленников для совместных проектов и творческих встреч.' },
     { name: 'София', age: 20, course: 2, specialty: 'Психология', image: 'images/photo_2025-10-11_02-13-52.jpg', bio: 'Интересуюсь психологией и саморазвитием' },
-    { name: 'Виктория', age: 22, course: 4, specialty: 'Юриспруденция', image: 'images/photo_2025-10-14_13-24-43.jpg', bio: 'Будущий юрист, люблю спорт и книги' }
+    { name: 'Александр', age: 22, course: 4, specialty: 'Юриспруденция', image: 'images/photo_2025-10-14_13-24-43.jpg', bio: 'Изучаю право, интересуюсь международным законодательством. Люблю дискуссии и обмен мнениями на различные темы.' }
 ];
 
 let currentProfileIndex = 0;
+let imageCache = {}; // Кэш для предзагруженных изображений
+let animationFrameId = null; // ID для requestAnimationFrame
+
+// Предзагрузка всех изображений профилей для быстрого отображения
+function preloadProfileImages() {
+    matchingProfiles.forEach((profile, index) => {
+        const img = new Image();
+        img.src = profile.image;
+        img.onload = () => {
+            imageCache[profile.image] = img;
+        };
+        img.onerror = () => {
+            // Предзагружаем fallback изображение
+            const fallbackImg = new Image();
+            fallbackImg.src = `https://i.pravatar.cc/300?img=${index + 1}`;
+            imageCache[profile.image] = fallbackImg;
+        };
+    });
+}
+
+// Запускаем предзагрузку при загрузке страницы
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', preloadProfileImages);
+} else {
+    preloadProfileImages();
+}
 
 // Интерфейс поиска пары (Тиндер-стайл)
 function openMatchingInterface() {
@@ -259,42 +285,49 @@ function renderProfileCard() {
     const profile = matchingProfiles[currentProfileIndex];
     const bio = profile.bio || 'Студент(ка) вуза. Ищу общение по интересам.';
     
-    container.innerHTML = `
-        <div class="profile-card fade-in" id="currentProfileCard">
-            <div class="profile-image-wrapper">
-                <img src="${profile.image}" alt="${profile.name}" onerror="this.src='https://i.pravatar.cc/300?img=${currentProfileIndex + 1}'">
-                <div class="profile-badges">
-                    <span class="badge badge-online">Онлайн</span>
-                </div>
-            </div>
-            <div class="profile-info-content">
-                <h3>${profile.name}, ${profile.age}</h3>
-                <p class="profile-details">${profile.course} курс, ${profile.specialty}</p>
-                <div class="bio-container">
-                    <div class="bio-header">
-                        <span class="bio-title">Био</span>
-                        <i class="fas fa-pencil-alt bio-edit-icon"></i>
-                    </div>
-                    <div class="bio-content">
-                        ${bio}
+    // Используем requestAnimationFrame для плавной отрисовки
+    requestAnimationFrame(() => {
+        // Используем кэшированное изображение если доступно
+        const imageSrc = imageCache[profile.image] ? imageCache[profile.image].src : profile.image;
+        
+        container.innerHTML = `
+            <div class="profile-card fade-in" id="currentProfileCard">
+                <div class="profile-image-wrapper">
+                    <img src="${imageSrc}" alt="${profile.name}" loading="eager" onerror="this.src='https://i.pravatar.cc/300?img=${currentProfileIndex + 1}'">
+                    <div class="profile-badges">
+                        <span class="badge badge-online">Онлайн</span>
                     </div>
                 </div>
+                <div class="profile-info-content">
+                    <h3>${profile.name}, ${profile.age}</h3>
+                    <p class="profile-details">${profile.course} курс, ${profile.specialty}</p>
+                    <div class="bio-container">
+                        <div class="bio-header">
+                            <span class="bio-title">Био</span>
+                            <i class="fas fa-pencil-alt bio-edit-icon"></i>
+                        </div>
+                        <div class="bio-content">
+                            ${bio}
+                        </div>
+                    </div>
+                </div>
             </div>
-        </div>
-    `;
-    
-    // Инициализируем свайп для новой карточки
-    initSwipeHandlers();
+        `;
+        
+        // Инициализируем свайп для новой карточки
+        initSwipeHandlers();
+    });
 }
 
 function nextProfile() {
     const card = document.querySelector('.profile-card');
     if (card) {
         card.classList.add('slide-out-left');
+        // Уменьшаем задержку для более быстрого обновления
         setTimeout(() => {
             currentProfileIndex = (currentProfileIndex + 1) % matchingProfiles.length;
             renderProfileCard();
-        }, 300);
+        }, 200); // Было 300ms, стало 200ms
     }
 }
 
@@ -305,11 +338,12 @@ function connectProfile() {
     const card = document.querySelector('.profile-card');
     if (card) {
         card.classList.add('slide-out-right');
+        // Уменьшаем задержку для более быстрого обновления
         setTimeout(() => {
             closeMatchingModal();
             // Открываем окно чата
             openChatWindow(profile);
-        }, 500);
+        }, 300); // Было 500ms, стало 300ms
     }
 }
 
@@ -376,35 +410,49 @@ function handleSwipeStart(e) {
 function handleSwipeMove(e) {
     if (!isSwiping || !cardElement) return;
     
-    const touch = e.touches ? e.touches[0] : e;
-    swipeCurrentX = touch.clientX - swipeStartX;
-    swipeCurrentY = touch.clientY - swipeStartY;
-    
-    // Вращаем карточку при свайпе
-    const rotation = swipeCurrentX * 0.1;
-    cardElement.style.transform = `translateX(${swipeCurrentX}px) rotate(${rotation}deg)`;
-    
-    // Меняем прозрачность в зависимости от направления
-    const opacity = 1 - Math.abs(swipeCurrentX) / 300;
-    cardElement.style.opacity = Math.max(0.3, opacity);
-    
-    // Добавляем визуальную индикацию направления
-    if (swipeCurrentX > 50) {
-        cardElement.classList.add('swiping-right');
-        cardElement.classList.remove('swiping-left');
-    } else if (swipeCurrentX < -50) {
-        cardElement.classList.add('swiping-left');
-        cardElement.classList.remove('swiping-right');
-    } else {
-        cardElement.classList.remove('swiping-left', 'swiping-right');
+    // Отменяем предыдущий кадр анимации для оптимизации
+    if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
     }
+    
+    // Используем requestAnimationFrame для плавной анимации
+    animationFrameId = requestAnimationFrame(() => {
+        const touch = e.touches ? e.touches[0] : e;
+        swipeCurrentX = touch.clientX - swipeStartX;
+        swipeCurrentY = touch.clientY - swipeStartY;
+        
+        // Вращаем карточку при свайпе
+        const rotation = swipeCurrentX * 0.1;
+        cardElement.style.transform = `translateX(${swipeCurrentX}px) rotate(${rotation}deg)`;
+        
+        // Меняем прозрачность в зависимости от направления
+        const opacity = 1 - Math.abs(swipeCurrentX) / 300;
+        cardElement.style.opacity = Math.max(0.3, opacity);
+        
+        // Добавляем визуальную индикацию направления
+        if (swipeCurrentX > 50) {
+            cardElement.classList.add('swiping-right');
+            cardElement.classList.remove('swiping-left');
+        } else if (swipeCurrentX < -50) {
+            cardElement.classList.add('swiping-left');
+            cardElement.classList.remove('swiping-right');
+        } else {
+            cardElement.classList.remove('swiping-left', 'swiping-right');
+        }
+    });
 }
 
 function handleSwipeEnd(e) {
     if (!isSwiping || !cardElement) return;
     
+    // Отменяем анимацию если она была
+    if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+        animationFrameId = null;
+    }
+    
     isSwiping = false;
-    cardElement.style.transition = 'transform 0.3s ease, opacity 0.3s ease';
+    cardElement.style.transition = 'transform 0.2s ease, opacity 0.2s ease'; // Уменьшили с 0.3s до 0.2s
     
     const swipeThreshold = 100; // Минимальное расстояние для свайпа
     
@@ -415,14 +463,14 @@ function handleSwipeEnd(e) {
             cardElement.style.opacity = '0';
             setTimeout(() => {
                 connectProfile();
-            }, 300);
+            }, 200); // Уменьшили с 300ms до 200ms
         } else {
             // Свайп влево - пропуск
             cardElement.style.transform = `translateX(-100vw) rotate(-30deg)`;
             cardElement.style.opacity = '0';
             setTimeout(() => {
                 nextProfile();
-            }, 300);
+            }, 200); // Уменьшили с 300ms до 200ms
         }
     } else {
         // Возвращаем карточку на место
@@ -535,7 +583,7 @@ function startChat(name) {
     closePairsModal();
     setTimeout(() => {
         openChatWindow(profile);
-    }, 500);
+    }, 200); // Уменьшили с 500ms до 200ms
 }
 
 function viewProfile(name) {
