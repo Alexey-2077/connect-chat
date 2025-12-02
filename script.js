@@ -822,6 +822,7 @@ function showUserProfile() {
     const userCourse = localStorage.getItem('userCourse') || '';
     const userGroup = localStorage.getItem('userGroup') || '';
     const userSpecialty = localStorage.getItem('userSpecialty') || '';
+    const userAvatar = localStorage.getItem('userAvatar') || '';
     
     const profileModal = document.createElement('div');
     profileModal.className = 'modal';
@@ -832,7 +833,7 @@ function showUserProfile() {
             <span class="modal-close profile-close">&times;</span>
             <div class="modal-header">
                 <div class="profile-avatar-large">
-                    <i class="fas fa-user-circle"></i>
+                    ${userAvatar ? `<img src="${userAvatar}" alt="${userName}">` : '<i class="fas fa-user-circle"></i>'}
                 </div>
                 <h2>${userName}</h2>
                 <p>${userEmail}</p>
@@ -889,6 +890,7 @@ function openEditProfileModal() {
     const userCourse = localStorage.getItem('userCourse') || '';
     const userGroup = localStorage.getItem('userGroup') || '';
     const userSpecialty = localStorage.getItem('userSpecialty') || '';
+    const userAvatar = localStorage.getItem('userAvatar') || '';
     
     editModal.innerHTML = `
         <div class="modal-content edit-profile-content">
@@ -901,6 +903,19 @@ function openEditProfileModal() {
                 <p>Обновите информацию о себе</p>
             </div>
             <form id="editProfileForm" class="edit-profile-form">
+                <!-- Загрузка аватарки -->
+                <div class="avatar-upload-section">
+                    <div class="avatar-preview-wrapper">
+                        <div class="avatar-preview" id="avatarPreview">
+                            ${userAvatar ? `<img src="${userAvatar}" alt="Аватар">` : '<i class="fas fa-user"></i>'}
+                        </div>
+                        <label for="avatarInput" class="avatar-upload-btn">
+                            <i class="fas fa-camera"></i>
+                            <span>Изменить фото</span>
+                        </label>
+                        <input type="file" id="avatarInput" accept="image/*" style="display: none;">
+                    </div>
+                </div>
                 <div class="form-group-wrapper">
                     <div class="form-group-icon">
                         <i class="fas fa-user"></i>
@@ -978,6 +993,25 @@ function openEditProfileModal() {
     editModal.style.display = 'flex';
     document.body.style.overflow = 'hidden';
     
+    // Обработчик загрузки аватарки
+    const avatarInput = editModal.querySelector('#avatarInput');
+    const avatarPreview = editModal.querySelector('#avatarPreview');
+    
+    if (avatarInput && avatarPreview) {
+        avatarInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const imageUrl = e.target.result;
+                    avatarPreview.innerHTML = `<img src="${imageUrl}" alt="Аватар">`;
+                    localStorage.setItem('userAvatar', imageUrl);
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    }
+    
     // Обработчик отправки формы
     const form = editModal.querySelector('#editProfileForm');
     form.addEventListener('submit', function(e) {
@@ -988,6 +1022,7 @@ function openEditProfileModal() {
         const course = document.getElementById('editCourse').value;
         const specialty = document.getElementById('editSpecialty').value;
         const group = document.getElementById('editGroup').value;
+        const avatar = localStorage.getItem('userAvatar') || '';
         
         localStorage.setItem('userName', name);
         localStorage.setItem('userAge', age);
@@ -995,6 +1030,9 @@ function openEditProfileModal() {
         localStorage.setItem('userCourse', course);
         localStorage.setItem('userSpecialty', specialty);
         localStorage.setItem('userGroup', group);
+        if (avatar) {
+            localStorage.setItem('userAvatar', avatar);
+        }
         
         showNotification('Профиль успешно обновлен!', 'success');
         closeEditProfileModal();
