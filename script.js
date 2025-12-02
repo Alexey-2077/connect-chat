@@ -893,35 +893,83 @@ function openEditProfileModal() {
     editModal.innerHTML = `
         <div class="modal-content edit-profile-content">
             <span class="modal-close edit-profile-close">&times;</span>
-            <div class="modal-header">
+            <div class="edit-profile-header">
+                <div class="edit-profile-icon">
+                    <i class="fas fa-user-edit"></i>
+                </div>
                 <h2>Редактирование профиля</h2>
+                <p>Обновите информацию о себе</p>
             </div>
-            <form id="editProfileForm">
-                <div class="form-group">
-                    <label for="editName">Имя</label>
-                    <input type="text" id="editName" value="${userName}" placeholder="Ваше имя" required>
+            <form id="editProfileForm" class="edit-profile-form">
+                <div class="form-group-wrapper">
+                    <div class="form-group-icon">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div class="form-group">
+                        <label for="editName">Имя</label>
+                        <input type="text" id="editName" value="${userName}" placeholder="Ваше имя" required>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label for="editAge">Возраст</label>
-                    <input type="number" id="editAge" value="${userAge}" placeholder="Ваш возраст">
+                
+                <div class="form-group-wrapper">
+                    <div class="form-group-icon">
+                        <i class="fas fa-birthday-cake"></i>
+                    </div>
+                    <div class="form-group">
+                        <label for="editAge">Возраст</label>
+                        <input type="number" id="editAge" value="${userAge}" placeholder="Ваш возраст" min="16" max="100">
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label for="editCourse">Курс</label>
-                    <input type="number" id="editCourse" value="${userCourse}" placeholder="Номер курса (1-6)">
+                
+                <div class="form-row">
+                    <div class="form-group-wrapper">
+                        <div class="form-group-icon">
+                            <i class="fas fa-graduation-cap"></i>
+                        </div>
+                        <div class="form-group">
+                            <label for="editCourse">Курс</label>
+                            <input type="number" id="editCourse" value="${userCourse}" placeholder="1-6" min="1" max="6">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group-wrapper">
+                        <div class="form-group-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="form-group">
+                            <label for="editGroup">Группа</label>
+                            <input type="text" id="editGroup" value="${userGroup}" placeholder="ЭК-201">
+                        </div>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label for="editSpecialty">Специальность / Факультет</label>
-                    <input type="text" id="editSpecialty" value="${userSpecialty}" placeholder="Например: Экономика">
+                
+                <div class="form-group-wrapper">
+                    <div class="form-group-icon">
+                        <i class="fas fa-book"></i>
+                    </div>
+                    <div class="form-group">
+                        <label for="editSpecialty">Специальность / Факультет</label>
+                        <input type="text" id="editSpecialty" value="${userSpecialty}" placeholder="Например: Экономика">
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label for="editGroup">Группа</label>
-                    <input type="text" id="editGroup" value="${userGroup}" placeholder="Например: ЭК-201">
+                
+                <div class="form-group-wrapper">
+                    <div class="form-group-icon">
+                        <i class="fas fa-info-circle"></i>
+                    </div>
+                    <div class="form-group">
+                        <label for="editAbout">О себе</label>
+                        <textarea id="editAbout" rows="4" placeholder="Расскажите немного о себе, своих интересах и увлечениях...">${userAbout}</textarea>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label for="editAbout">О себе</label>
-                    <textarea id="editAbout" rows="3" placeholder="Расскажите немного о себе...">${userAbout}</textarea>
+                
+                <div class="edit-profile-actions">
+                    <button type="button" class="btn-secondary btn-cancel" onclick="closeEditProfileModal()">Отмена</button>
+                    <button type="submit" class="btn-primary btn-save">
+                        <i class="fas fa-save"></i>
+                        Сохранить изменения
+                    </button>
                 </div>
-                <button type="submit" class="btn-primary btn-full">Сохранить</button>
             </form>
         </div>
     `;
@@ -1046,27 +1094,50 @@ function openChatWindow(profile) {
 
     chatWindow.innerHTML = `
         <div class="chat-header">
+            <div class="chat-header-gradient"></div>
             <div class="chat-user-info">
-                <img src="${profile.image}" alt="${profile.name}" class="chat-avatar" onerror="this.src='https://i.pravatar.cc/300?img=1'">
+                <div class="chat-avatar-wrapper">
+                    <img src="${profile.image}" alt="${profile.name}" class="chat-avatar" onerror="this.src='https://i.pravatar.cc/300?img=1'">
+                    <div class="chat-online-indicator"></div>
+                </div>
                 <div class="chat-user-details">
                     <h4>${profile.name}</h4>
-                    <p>Онлайн</p>
+                    <p class="chat-status">
+                        <span class="status-dot"></span>
+                        Онлайн
+                    </p>
                 </div>
             </div>
             <div class="chat-controls">
-                <button onclick="minimizeChat()"><i class="fas fa-minus"></i></button>
-                <button onclick="closeChatWindow()"><i class="fas fa-times"></i></button>
+                <button class="chat-control-btn" onclick="minimizeChat()" title="Свернуть">
+                    <i class="fas fa-minus"></i>
+                </button>
+                <button class="chat-control-btn" onclick="closeChatWindow()" title="Закрыть">
+                    <i class="fas fa-times"></i>
+                </button>
             </div>
         </div>
         <div class="chat-messages" id="chatMessages">
-            <div class="message received">
-                Привет! Я тоже учусь на ${profile.specialty}. Давай знакомиться?
-                <div class="message-time">${new Date().toLocaleTimeString().slice(0, 5)}</div>
+            <div class="message-wrapper received">
+                <div class="message received">
+                    <div class="message-content">
+                        Привет! Я тоже учусь на ${profile.specialty}. Давай знакомиться?
+                    </div>
+                    <div class="message-time">${new Date().toLocaleTimeString().slice(0, 5)}</div>
+                </div>
             </div>
         </div>
         <div class="chat-input-area">
-            <input type="text" id="chatInput" placeholder="Напишите сообщение..." onkeypress="handleEnter(event)">
-            <button class="btn-send" onclick="sendMessage()">
+            <div class="chat-input-wrapper">
+                <button class="chat-attach-btn" title="Прикрепить файл">
+                    <i class="fas fa-paperclip"></i>
+                </button>
+                <input type="text" id="chatInput" placeholder="Напишите сообщение..." onkeypress="handleEnter(event)">
+                <button class="chat-emoji-btn" title="Эмодзи">
+                    <i class="far fa-smile"></i>
+                </button>
+            </div>
+            <button class="btn-send" onclick="sendMessage()" title="Отправить">
                 <i class="fas fa-paper-plane"></i>
             </button>
         </div>
@@ -1096,25 +1167,29 @@ function sendMessage() {
         const text = input.value;
         
         // Добавляем сообщение пользователя
-        const userMsg = document.createElement('div');
-        userMsg.className = 'message sent';
-        userMsg.innerHTML = `
-            ${text}
-            <div class="message-time">${new Date().toLocaleTimeString().slice(0, 5)}</div>
+        const userMsgWrapper = document.createElement('div');
+        userMsgWrapper.className = 'message-wrapper sent';
+        userMsgWrapper.innerHTML = `
+            <div class="message sent">
+                <div class="message-content">${text}</div>
+                <div class="message-time">${new Date().toLocaleTimeString().slice(0, 5)}</div>
+            </div>
         `;
-        messages.appendChild(userMsg);
+        messages.appendChild(userMsgWrapper);
         input.value = '';
         messages.scrollTop = messages.scrollHeight;
 
         // Имитация ответа
         setTimeout(() => {
-            const replyMsg = document.createElement('div');
-            replyMsg.className = 'message received';
-            replyMsg.innerHTML = `
-                Интересно! Расскажи подробнее)
-                <div class="message-time">${new Date().toLocaleTimeString().slice(0, 5)}</div>
+            const replyMsgWrapper = document.createElement('div');
+            replyMsgWrapper.className = 'message-wrapper received';
+            replyMsgWrapper.innerHTML = `
+                <div class="message received">
+                    <div class="message-content">Интересно! Расскажи подробнее)</div>
+                    <div class="message-time">${new Date().toLocaleTimeString().slice(0, 5)}</div>
+                </div>
             `;
-            messages.appendChild(replyMsg);
+            messages.appendChild(replyMsgWrapper);
             messages.scrollTop = messages.scrollHeight;
         }, 2000 + Math.random() * 2000);
     }
