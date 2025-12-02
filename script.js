@@ -66,7 +66,12 @@ function hideLoadingScreen() {
             if (loadingScreen.parentNode) {
                 loadingScreen.remove();
             }
+            // Показываем диалог cookies после скрытия экрана загрузки
+            initCookieConsent();
         }, 500);
+    } else {
+        // Если экрана загрузки нет, сразу показываем диалог cookies
+        initCookieConsent();
     }
 }
 
@@ -76,6 +81,53 @@ if (document.readyState === 'loading') {
 } else {
     initLoadingScreen();
 }
+
+// Управление диалогом согласия на cookies
+function initCookieConsent() {
+    const cookieConsent = document.getElementById('cookieConsent');
+    const cookieConsentGiven = localStorage.getItem('cookieConsent');
+    
+    // Показываем диалог только если пользователь еще не дал согласие
+    if (!cookieConsentGiven && cookieConsent) {
+        // Показываем диалог с небольшой задержкой для плавности
+        setTimeout(() => {
+            cookieConsent.classList.add('show');
+            document.body.style.overflow = 'hidden';
+        }, 300);
+    }
+}
+
+function acceptCookies() {
+    localStorage.setItem('cookieConsent', 'accepted');
+    hideCookieConsent();
+    showNotification('Спасибо! Ваши настройки сохранены.', 'success');
+}
+
+function declineCookies() {
+    // Сохраняем только факт отказа, не очищаем все данные
+    localStorage.setItem('cookieConsent', 'declined');
+    hideCookieConsent();
+    showNotification('Cookies отключены. Некоторые функции могут быть недоступны.', 'info');
+}
+
+function hideCookieConsent() {
+    const cookieConsent = document.getElementById('cookieConsent');
+    if (cookieConsent) {
+        cookieConsent.classList.remove('show');
+        document.body.style.overflow = 'auto';
+        
+        // Удаляем элемент из DOM после анимации
+        setTimeout(() => {
+            if (cookieConsent.parentNode) {
+                cookieConsent.style.display = 'none';
+            }
+        }, 300);
+    }
+}
+
+// Делаем функции глобальными
+window.acceptCookies = acceptCookies;
+window.declineCookies = declineCookies;
 
 document.addEventListener('DOMContentLoaded', function() {
     // Инициализация Telegram WebApp
@@ -129,6 +181,8 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Проверка статуса входа при загрузке
     checkLoginStatus();
+    
+    // Диалог cookies будет показан после скрытия экрана загрузки
 });
 
 function setupHeroButtons() {

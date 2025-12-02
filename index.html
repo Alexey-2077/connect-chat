@@ -20,6 +20,23 @@
         </div>
     </div>
 
+    <!-- Диалог согласия на использование cookies -->
+    <div id="cookieConsent" class="cookie-consent">
+        <div class="cookie-consent-content">
+            <div class="cookie-consent-header">
+                <i class="fas fa-cookie-bite"></i>
+                <h3>Использование Cookie</h3>
+            </div>
+            <div class="cookie-consent-body">
+                <p>Мы используем cookies для сохранения вашей сессии и улучшения работы приложения. Продолжая использовать приложение, вы принимаете использование cookies.</p>
+            </div>
+            <div class="cookie-consent-actions">
+                <button class="btn-cookie-decline" onclick="declineCookies()">Отклонить</button>
+                <button class="btn-cookie-accept" onclick="acceptCookies()">Принять</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Навигация -->
     <nav class="navbar">
         <div class="nav-container">
@@ -30,7 +47,6 @@
             <div class="nav-menu">
                 <a href="#home" class="nav-link active">Главная</a>
                 <a href="#about" class="nav-link">О нас</a>
-                <a href="#referral" class="nav-link">Пригласить друзей</a>
                 <a href="#contact" class="nav-link">Контакты</a>
                 <button class="btn-primary nav-btn">Войти</button>
             </div>
@@ -138,67 +154,6 @@
         </div>
     </section>
 
-    <!-- Реферальная система -->
-    <section id="referral" class="referral">
-        <div class="container">
-            <div class="referral-content">
-                <div class="referral-text">
-                    <h2 class="section-title">Пригласи однокурсников и получи бонусы</h2>
-                    <p class="referral-description">
-                        Каждый приглашенный студент приносит вам баллы, которые можно обменять на премиум-функции.
-                        Твои друзья тоже получают бонусы за регистрацию!
-                    </p>
-                    <div class="referral-steps">
-                        <div class="step">
-                            <div class="step-number">1</div>
-                            <div class="step-text">
-                                <h4>Поделись ссылкой</h4>
-                                <p>Получи уникальную реферальную ссылку</p>
-                            </div>
-                        </div>
-                        <div class="step">
-                            <div class="step-number">2</div>
-                            <div class="step-text">
-                                <h4>Однокурсники регистрируются</h4>
-                                <p>Твои друзья создают профили по ссылке</p>
-                            </div>
-                        </div>
-                        <div class="step">
-                            <div class="step-number">3</div>
-                            <div class="step-text">
-                                <h4>Получай бонусы</h4>
-                                <p>За каждого друга +100 баллов в твой счет</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="referral-form">
-                    <div class="referral-card">
-                        <h3>Ваша реферальная ссылка</h3>
-                        <div class="referral-link">
-                            <input type="text" value="loveconnect.ru/ref/anna123" readonly id="referralLink">
-                            <button class="btn-copy" onclick="copyReferralLink()">
-                                <i class="fas fa-copy"></i>
-                                Копировать
-                            </button>
-                        </div>
-                        <div class="referral-stats">
-                            <div class="stat-item">
-                                <span class="stat-value">12</span>
-                                <span class="stat-label">Приглашенных студентов</span>
-                            </div>
-                            <div class="stat-item">
-                                <span class="stat-value">1200</span>
-                                <span class="stat-label">Баллов заработано</span>
-                            </div>
-                        </div>
-                        <button class="btn-primary">Поделиться в соцсетях</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
     <!-- Контакты -->
     <section id="contact" class="contact">
         <div class="container">
@@ -255,7 +210,6 @@
                 </div>
                 <div class="footer-links">
                     <a href="#about">О нас</a>
-                    <a href="#referral">Рефералы</a>
                     <a href="#contact">Контакты</a>
                     <a href="#">Политика конфиденциальности</a>
                 </div>
