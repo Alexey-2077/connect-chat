@@ -353,8 +353,60 @@ if (document.readyState === 'loading') {
     preloadProfileImages();
 }
 
+// Функция для получения всех профилей включая профиль пользователя
+async function getAllProfiles() {
+    let allProfiles = [...matchingProfiles];
+    
+    // Пытаемся получить профили из Supabase
+    if (typeof getAllProfilesFromSupabase === 'function') {
+        const supabaseProfiles = await getAllProfilesFromSupabase();
+        if (supabaseProfiles && supabaseProfiles.length > 0) {
+            // Объединяем профили из Supabase с локальными
+            allProfiles = [...supabaseProfiles, ...matchingProfiles];
+            // Удаляем дубликаты по имени
+            const uniqueProfiles = [];
+            const seenNames = new Set();
+            allProfiles.forEach(profile => {
+                if (!seenNames.has(profile.name)) {
+                    seenNames.add(profile.name);
+                    uniqueProfiles.push(profile);
+                }
+            });
+            allProfiles = uniqueProfiles;
+        }
+    }
+    
+    // Получаем данные пользователя
+    const userName = localStorage.getItem('userName');
+    const userAge = localStorage.getItem('userAge');
+    const userCourse = localStorage.getItem('userCourse');
+    const userSpecialty = localStorage.getItem('userSpecialty');
+    const userAbout = localStorage.getItem('userAbout');
+    const userAvatar = localStorage.getItem('userAvatar');
+    
+    // Если пользователь заполнил профиль, добавляем его в список
+    if (userName && userAge && userSpecialty) {
+        const userProfile = {
+            name: userName,
+            age: parseInt(userAge) || 20,
+            course: parseInt(userCourse) || 1,
+            specialty: userSpecialty,
+            image: userAvatar || 'https://i.pravatar.cc/300?img=10',
+            bio: userAbout || 'Студент(ка) вуза. Ищу общение по интересам.',
+            isCurrentUser: true // Флаг для исключения из показа
+        };
+        
+        // Сохраняем профиль в Supabase
+        if (typeof saveUserProfileToSupabase === 'function') {
+            saveUserProfileToSupabase();
+        }
+    }
+    
+    return allProfiles;
+}
+
 // Интерфейс поиска пары (Тиндер-стайл)
-function openMatchingInterface() {
+async function openMatchingInterface() {
     // Удаляем старое модальное окно, если есть
     const oldModal = document.getElementById('matchingModal');
     if (oldModal) oldModal.remove();
@@ -363,8 +415,53 @@ function openMatchingInterface() {
     matchingModal.className = 'modal';
     matchingModal.id = 'matchingModal';
     
+    // Показываем индикатор загрузки
+    matchingModal.innerHTML = `
+        <div class="modal-content matching-modal-content">
+            <div style="text-align: center; padding: 40px;">
+                <div class="loading-spinner" style="width: 60px; height: 60px; margin: 0 auto;">
+                    <div class="spinner-ring"></div>
+                </div>
+                <p style="margin-top: 20px; color: #7f8c8d;">Загрузка профилей...</p>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(matchingModal);
+    matchingModal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+    
+    // Получаем все профили и исключаем профиль текущего пользователя
+    const allProfiles = await getAllProfiles();
+    const currentUserName = localStorage.getItem('userName');
+    const profilesToShow = allProfiles.filter(profile => profile.name !== currentUserName);
+    
+    if (profilesToShow.length === 0) {
+        matchingModal.innerHTML = `
+            <div class="modal-content matching-modal-content">
+                <span class="modal-close matching-close">&times;</span>
+                <div class="modal-header">
+                    <i class="fas fa-search-location" style="font-size: 2rem; color: #ff6b6b;"></i>
+                    <h2>Нет доступных профилей</h2>
+                    <p style="color: #7f8c8d;">Пока нет других пользователей. Заполните свой профиль, чтобы другие могли вас найти!</p>
+                </div>
+                <div style="padding: 20px; text-align: center;">
+                    <button class="btn-primary" onclick="closeMatchingModal()">Закрыть</button>
+                </div>
+            </div>
+        `;
+        const closeBtn = matchingModal.querySelector('.matching-close');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', closeMatchingModal);
+        }
+        return;
+    }
+    
     // Перемешиваем массив профилей при каждом открытии
-    matchingProfiles.sort(() => Math.random() - 0.5);
+    profilesToShow.sort(() => Math.random() - 0.5);
+    
+    // Временно заменяем matchingProfiles для работы с текущим списком
+    const originalProfiles = matchingProfiles;
+    matchingProfiles = profilesToShow;
     currentProfileIndex = 0;
     
     matchingModal.innerHTML = `
@@ -409,6 +506,11 @@ function openMatchingInterface() {
             closeMatchingModal();
         }
     });
+    
+    // Сохраняем функцию восстановления оригинального массива
+    matchingModal._restoreProfiles = function() {
+        matchingProfiles = originalProfiles;
+    };
 }
 
 function renderProfileCard() {
@@ -483,6 +585,10 @@ function connectProfile() {
 function closeMatchingModal() {
     const matchingModal = document.getElementById('matchingModal');
     if (matchingModal) {
+        // Восстанавливаем оригинальный массив профилей если нужно
+        if (matchingModal._restoreProfiles) {
+            matchingModal._restoreProfiles();
+        }
         matchingModal.remove();
         document.body.style.overflow = 'auto';
     }
@@ -1014,7 +1120,7 @@ function openEditProfileModal() {
     
     // Обработчик отправки формы
     const form = editModal.querySelector('#editProfileForm');
-    form.addEventListener('submit', function(e) {
+    form.addEventListener('submit', async function(e) {
         e.preventDefault();
         const name = document.getElementById('editName').value;
         const age = document.getElementById('editAge').value;
@@ -1034,7 +1140,18 @@ function openEditProfileModal() {
             localStorage.setItem('userAvatar', avatar);
         }
         
-        showNotification('Профиль успешно обновлен!', 'success');
+        // Сохраняем профиль в Supabase
+        if (typeof saveUserProfileToSupabase === 'function') {
+            const saved = await saveUserProfileToSupabase();
+            if (saved) {
+                showNotification('Профиль успешно обновлен и синхронизирован!', 'success');
+            } else {
+                showNotification('Профиль обновлен локально', 'success');
+            }
+        } else {
+            showNotification('Профиль успешно обновлен!', 'success');
+        }
+        
         closeEditProfileModal();
         
         // Если открыто окно профиля, обновляем его (закрываем и открываем заново)
@@ -1182,6 +1299,37 @@ function openChatWindow(profile) {
     `;
 
     document.body.appendChild(chatWindow);
+    
+    // Инициализация обработчиков для кнопки отправки
+    const chatInput = document.getElementById('chatInput');
+    const sendBtn = chatWindow.querySelector('.btn-send');
+    
+    if (chatInput && sendBtn) {
+        // Обновление состояния кнопки при изменении текста
+        const updateSendButton = () => {
+            if (chatInput.value.trim() === '') {
+                sendBtn.disabled = true;
+                sendBtn.style.opacity = '0.5';
+                sendBtn.style.cursor = 'not-allowed';
+            } else {
+                sendBtn.disabled = false;
+                sendBtn.style.opacity = '1';
+                sendBtn.style.cursor = 'pointer';
+            }
+        };
+        
+        // Изначально кнопка неактивна
+        updateSendButton();
+        
+        // Отслеживание изменений в поле ввода
+        chatInput.addEventListener('input', updateSendButton);
+        chatInput.addEventListener('keyup', updateSendButton);
+        
+        // Фокус на поле ввода при открытии чата
+        setTimeout(() => {
+            chatInput.focus();
+        }, 100);
+    }
 }
 
 function closeChatWindow() {
@@ -1200,6 +1348,7 @@ function minimizeChat() {
 function sendMessage() {
     const input = document.getElementById('chatInput');
     const messages = document.getElementById('chatMessages');
+    const sendBtn = document.querySelector('.btn-send');
     
     if (input && input.value.trim() !== '') {
         const text = input.value;
@@ -1216,6 +1365,16 @@ function sendMessage() {
         messages.appendChild(userMsgWrapper);
         input.value = '';
         messages.scrollTop = messages.scrollHeight;
+        
+        // Обновляем состояние кнопки отправки
+        if (sendBtn) {
+            sendBtn.disabled = true;
+            sendBtn.style.opacity = '0.5';
+            sendBtn.style.cursor = 'not-allowed';
+        }
+        
+        // Возвращаем фокус на поле ввода
+        input.focus();
 
         // Имитация ответа
         setTimeout(() => {
@@ -1234,7 +1393,8 @@ function sendMessage() {
 }
 
 function handleEnter(e) {
-    if (e.key === 'Enter') {
+    if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
         sendMessage();
     }
 }
