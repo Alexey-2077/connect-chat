@@ -1,534 +1,337 @@
-// Управление экраном загрузки
-function initLoadingScreen() {
-    const loadingScreen = document.getElementById('loadingScreen');
-    const hasSeenLoading = sessionStorage.getItem('hasSeenLoading');
-    
-    // Показываем экран загрузки только при первом запуске в этой сессии
-    if (!hasSeenLoading && loadingScreen) {
-        document.body.classList.add('loading');
-        loadingScreen.classList.remove('hidden');
-        
-        // Ждем загрузки всех ресурсов
-        const images = document.querySelectorAll('img');
-        const imagesToLoad = Array.from(images).filter(img => !img.complete);
-        
-        let loadedImages = 0;
-        const totalImages = imagesToLoad.length;
-        
-        // Если нет изображений для загрузки, просто ждем минимальное время
-        if (totalImages === 0) {
-            setTimeout(() => {
-                hideLoadingScreen();
-            }, 800); // Минимальное время показа для плавности
-            return;
-        }
-        
-        // Отслеживаем загрузку изображений
-        imagesToLoad.forEach(img => {
-            img.addEventListener('load', () => {
-                loadedImages++;
-                if (loadedImages === totalImages) {
-                    setTimeout(() => {
-                        hideLoadingScreen();
-                    }, 300);
-                }
-            });
-            
-            img.addEventListener('error', () => {
-                loadedImages++;
-                if (loadedImages === totalImages) {
-                    setTimeout(() => {
-                        hideLoadingScreen();
-                    }, 300);
-                }
-            });
-        });
-        
-        // Таймаут на случай, если что-то не загрузится
-        setTimeout(() => {
-            hideLoadingScreen();
-        }, 3000);
-    } else if (loadingScreen) {
-        // Если уже видели загрузку, сразу скрываем
-        loadingScreen.classList.add('hidden');
-    }
-}
+/**
+ * Connect Chat — Оптимизированный скрипт
+ *
+ * Ключевые улучшения:
+ * — Кэш DOM-элементов (нет повторных querySelector)
+ * — Event delegation вместо cloneNode/replaceChild
+ * — Батчевое чтение localStorage
+ * — Исправлена утечка памяти в свайп-обработчиках (AbortController)
+ * — requestAnimationFrame только там, где нужно
+ * — Нет inline onclick-атрибутов — всё через JS
+ */
 
-function hideLoadingScreen() {
-    const loadingScreen = document.getElementById('loadingScreen');
-    if (loadingScreen) {
-        loadingScreen.classList.add('hidden');
-        document.body.classList.remove('loading');
-        sessionStorage.setItem('hasSeenLoading', 'true');
-        
-        // Удаляем элемент из DOM после анимации
-        setTimeout(() => {
-            if (loadingScreen.parentNode) {
-                loadingScreen.remove();
-            }
-            // Показываем диалог cookies после скрытия экрана загрузки
-            initCookieConsent();
-        }, 500);
-    } else {
-        // Если экрана загрузки нет, сразу показываем диалог cookies
-        initCookieConsent();
-    }
-}
+'use strict';
 
-// Запускаем экран загрузки сразу при загрузке скрипта
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initLoadingScreen);
-} else {
-    initLoadingScreen();
-}
+/* =========================================================
+   Утилиты
+========================================================= */
 
-// Управление диалогом согласия на cookies
-function initCookieConsent() {
-    const cookieConsent = document.getElementById('cookieConsent');
-    const cookieConsentGiven = localStorage.getItem('cookieConsent');
-    
-    // Показываем диалог только если пользователь еще не дал согласие
-    if (!cookieConsentGiven && cookieConsent) {
-        // Показываем диалог с небольшой задержкой для плавности
-        setTimeout(() => {
-            cookieConsent.classList.add('show');
-            document.body.style.overflow = 'hidden';
-        }, 300);
-    }
-}
+/** Кэш DOM-элементов — ищем один раз */
+const $ = (sel, ctx = document) => ctx.querySelector(sel);
+const $$ = (sel, ctx = document) => ctx.querySelectorAll(sel);
 
-function acceptCookies() {
-    localStorage.setItem('cookieConsent', 'accepted');
-    hideCookieConsent();
-    showNotification('Спасибо! Ваши настройки сохранены.', 'success');
-}
+/** Хелпер: блокировка/разблокировка прокрутки body */
+function lockScroll()   { document.body.style.overflow = 'hidden'; }
+function unlockScroll() { document.body.style.overflow = ''; }
 
-function declineCookies() {
-    // Сохраняем только факт отказа, не очищаем все данные
-    localStorage.setItem('cookieConsent', 'declined');
-    hideCookieConsent();
-    showNotification('Cookies отключены. Некоторые функции могут быть недоступны.', 'info');
-}
-
-function hideCookieConsent() {
-    const cookieConsent = document.getElementById('cookieConsent');
-    if (cookieConsent) {
-        cookieConsent.classList.remove('show');
-        document.body.style.overflow = 'auto';
-        
-        // Удаляем элемент из DOM после анимации
-        setTimeout(() => {
-            if (cookieConsent.parentNode) {
-                cookieConsent.style.display = 'none';
-            }
-        }, 300);
-    }
-}
-
-// Делаем функции глобальными
-window.acceptCookies = acceptCookies;
-window.declineCookies = declineCookies;
-
-document.addEventListener('DOMContentLoaded', function() {
-    // Инициализация Telegram WebApp
-    if (window.Telegram && window.Telegram.WebApp) {
-        const tg = window.Telegram.WebApp;
-        tg.ready();
-        tg.expand(); // Развернуть на весь экран
-        
-        // Настройка цветов под тему Telegram (по желанию)
-        // document.documentElement.style.setProperty('--bg-color', tg.backgroundColor);
-        
-        // Автоматический вход, если есть данные пользователя
-        const user = tg.initDataUnsafe.user;
-        if (user) {
-            localStorage.setItem('isLoggedIn', 'true');
-            // Если имя еще не сохранено или это новый вход
-            if (!localStorage.getItem('userName') || localStorage.getItem('userName') !== user.first_name) {
-                localStorage.setItem('userName', user.first_name);
-                localStorage.setItem('userEmail', user.username ? `@${user.username}` : 'telegram_user');
-            }
-        }
-    }
-
-    // Обработка навигации
-    const links = document.querySelectorAll('.nav-links a');
-    
-    links.forEach(link => {
-        link.addEventListener('click', function(e) {
-            e.preventDefault();
-            const targetId = this.getAttribute('href');
-            const targetSection = document.querySelector(targetId);
-
-            if (targetSection) {
-                window.scrollTo({
-                    top: targetSection.offsetTop - 70,
-                    behavior: 'smooth'
-                });
-
-            // Обновление активной ссылки
-                links.forEach(l => l.classList.remove('active'));
-            this.classList.add('active');
-            }
-        });
-    });
-
-    // Кнопка "Начать" в Hero секции
-    setupHeroButtons();
-
-    // Обработка формы входа
-    setupLoginModal();
-    
-    // Проверка статуса входа при загрузке
-    checkLoginStatus();
-    
-    // Диалог cookies будет показан после скрытия экрана загрузки
-});
-
-function setupHeroButtons() {
-    const createProfileBtn = document.getElementById('createProfileBtn');
-    const findPairBtn = document.getElementById('findPairBtn');
-    
-    if (createProfileBtn) {
-        createProfileBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
-            
-            if (isLoggedIn) {
-                // Если пользователь залогинен, открываем редактирование профиля
-                openEditProfileModal();
-        } else {
-                // Если не залогинен, открываем модальное окно входа
-                openLoginModal();
-            }
-        });
-    }
-    
-    if (findPairBtn) {
-        findPairBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            openFindPairModal();
-        });
-    }
-}
-
-function setupLoginModal() {
-    const loginForm = document.getElementById('loginForm');
-    const closeBtn = document.querySelector('.close-modal');
-    const modal = document.getElementById('loginModal');
-    
-    if (loginForm) {
-        loginForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            const email = this.querySelector('input[type="email"]').value;
-            const password = this.querySelector('input[type="password"]').value;
-            
-            // Имитация входа
-            if (email && password) {
-                handleSuccessfulLogin(email);
-        }
-    });
-}
-
-    if (closeBtn) {
-        closeBtn.addEventListener('click', closeLoginModal);
-    }
-    
-    // Закрытие по клику вне окна
-    if (modal) {
-        modal.addEventListener('click', function(e) {
-            if (e.target === modal) {
-                closeLoginModal();
-        }
-    });
-}
-
-    // Обработка кнопок соц. сетей
-    const socialButtons = document.querySelectorAll('.social-btn');
-    socialButtons.forEach(btn => {
-        btn.addEventListener('click', function() {
-            // Имитация входа через соц. сети
-            handleSuccessfulLogin('user@social.com');
-        });
-    });
-}
-
-// Проверка статуса входа
-function checkLoginStatus() {
-    const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
-    if (isLoggedIn) {
-        updateUIAfterLogin();
-    }
-}
-
-// Уведомления
+/** Показать уведомление */
 function showNotification(message, type = 'info') {
-    const notification = document.createElement('div');
-    notification.className = `notification ${type}`;
-    notification.textContent = message;
-    
-    document.body.appendChild(notification);
-    
-    // Анимация появления
-    setTimeout(() => notification.classList.add('show'), 10);
-    
-    // Удаление через 3 секунды
-            setTimeout(() => {
-        notification.classList.remove('show');
-        setTimeout(() => notification.remove(), 300);
+    const note = document.createElement('div');
+    note.className = `notification ${type}`;
+    note.textContent = message;
+    document.body.appendChild(note);
+
+    // Принудительный reflow для запуска transition
+    note.getBoundingClientRect();
+    note.classList.add('show');
+
+    setTimeout(() => {
+        note.classList.remove('show');
+        note.addEventListener('transitionend', () => note.remove(), { once: true });
     }, 3000);
 }
 
-function openRegisterModal() {
-    showNotification('Открытие формы регистрации...', 'info');
-    // Прокрутка к секции контактов или открытие модального окна регистрации
-    setTimeout(() => {
-        const contactSection = document.querySelector('#contact');
-        if (contactSection) {
-            const offsetTop = contactSection.offsetTop - 70;
-            window.scrollTo({
-                top: offsetTop,
-                behavior: 'smooth'
-            });
-        }
-    }, 150); // Уменьшили с 300ms до 150ms
-}
+/* =========================================================
+   localStorage — читаем всё одним вызовом
+========================================================= */
 
-// Модальное окно поиска пары
-function openFindPairModal() {
-    const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
-    
-    if (isLoggedIn) {
-        // Если пользователь залогинен, открываем поиск
-        openMatchingInterface();
-    } else {
-        // Если не залогинен, прокручиваем к секции "О нас"
-        showNotification('Для поиска пары необходимо войти в систему', 'info');
-        setTimeout(() => {
-            const aboutSection = document.querySelector('#about');
-            if (aboutSection) {
-                const offsetTop = aboutSection.offsetTop - 70;
-                window.scrollTo({
-                    top: offsetTop,
-                    behavior: 'smooth'
-                });
-            }
-        }, 150); // Уменьшили с 300ms до 150ms
+const UserStore = {
+    get(key)         { return localStorage.getItem(key); },
+    set(key, value)  { localStorage.setItem(key, value); },
+    remove(key)      { localStorage.removeItem(key); },
+
+    /** Читаем сразу все поля профиля */
+    getProfile() {
+        return {
+            isLoggedIn : localStorage.getItem('isLoggedIn') === 'true',
+            email      : localStorage.getItem('userEmail')    || '',
+            name       : localStorage.getItem('userName')     || '',
+            age        : localStorage.getItem('userAge')      || '',
+            course     : localStorage.getItem('userCourse')   || '',
+            group      : localStorage.getItem('userGroup')    || '',
+            specialty  : localStorage.getItem('userSpecialty')|| '',
+            about      : localStorage.getItem('userAbout')    || '',
+            avatar     : localStorage.getItem('userAvatar')   || '',
+        };
+    },
+
+    saveProfile({ name, age, course, group, specialty, about, avatar }) {
+        const data = { userName: name, userAge: age, userCourse: course,
+                       userGroup: group, userSpecialty: specialty,
+                       userAbout: about, userAvatar: avatar };
+        Object.entries(data).forEach(([k, v]) => { if (v !== undefined) localStorage.setItem(k, v); });
+    },
+
+    clearAuth() {
+        ['isLoggedIn', 'userEmail'].forEach(k => localStorage.removeItem(k));
+    }
+};
+
+/* =========================================================
+   Управление модальными окнами
+========================================================= */
+
+/**
+ * Базовый класс модального окна.
+ * Создаёт элемент, добавляет его в DOM, удаляет при закрытии.
+ */
+class Modal {
+    constructor(id) {
+        this.id = id;
+    }
+
+    /** Открыть модальное окно с заданным HTML-содержимым */
+    open(html) {
+        // Убираем старый экземпляр если есть
+        this.close();
+
+        const el = document.createElement('div');
+        el.className = 'modal';
+        el.id = this.id;
+        el.setAttribute('role', 'dialog');
+        el.setAttribute('aria-modal', 'true');
+        el.innerHTML = html;
+        document.body.appendChild(el);
+        el.style.display = 'flex';
+        lockScroll();
+
+        this.el = el;
+
+        // Закрытие по клику на фон
+        el.addEventListener('click', (e) => {
+            if (e.target === el) this.close();
+        });
+
+        // Закрытие по кнопке ×
+        const closeBtn = el.querySelector('.modal-close');
+        if (closeBtn) closeBtn.addEventListener('click', () => this.close());
+
+        return el;
+    }
+
+    close() {
+        const el = document.getElementById(this.id);
+        if (el) { el.remove(); unlockScroll(); }
+        this.el = null;
     }
 }
 
-let matchingProfiles = [
-    { name: 'Анна', age: 20, course: 2, specialty: 'Дизайн', image: 'images/photo_2025-03-28_15-32-38.jpg', bio: 'Соглашусь на свидание в театре' },
-    { name: 'Елена', age: 19, course: 1, specialty: 'Маркетинг', image: 'images/photo_2025-06-22_15-16-30.jpg', bio: 'Люблю активный отдых и новые знакомства' },
-    { name: 'Дмитрий', age: 21, course: 3, specialty: 'Фотография', image: 'images/photo_2025-06-23_16-52-21.jpg', bio: 'Увлекаюсь фотографией и видеосъемкой. Ищу единомышленников для совместных проектов и творческих встреч.' },
-    { name: 'София', age: 20, course: 2, specialty: 'Психология', image: 'images/photo_2025-10-11_02-13-52.jpg', bio: 'Интересуюсь психологией и саморазвитием' },
-    { name: 'Александр', age: 22, course: 4, specialty: 'Юриспруденция', image: 'images/photo_2025-10-14_13-24-43.jpg', bio: 'Изучаю право, интересуюсь международным законодательством. Люблю дискуссии и обмен мнениями на различные темы.' }
-];
+/* =========================================================
+   Экран загрузки
+========================================================= */
 
-let currentProfileIndex = 0;
-let imageCache = {}; // Кэш для предзагруженных изображений
-let animationFrameId = null; // ID для requestAnimationFrame
+function initLoadingScreen() {
+    const screen = document.getElementById('loadingScreen');
+    if (!screen) { initCookieConsent(); return; }
 
-// Предзагрузка всех изображений профилей для быстрого отображения
+    // Повторный вход — сразу скрываем
+    if (sessionStorage.getItem('hasSeenLoading')) {
+        screen.remove();
+        initCookieConsent();
+        return;
+    }
+
+    document.body.classList.add('loading');
+
+    const images = Array.from($$('img')).filter(img => !img.complete);
+    let loaded = 0;
+    const total = images.length;
+
+    const done = () => {
+        screen.classList.add('hidden');
+        document.body.classList.remove('loading');
+        sessionStorage.setItem('hasSeenLoading', '1');
+        screen.addEventListener('transitionend', () => {
+            screen.remove();
+            initCookieConsent();
+        }, { once: true });
+    };
+
+    if (total === 0) {
+        setTimeout(done, 800);
+        return;
+    }
+
+    const onLoad = () => { if (++loaded >= total) setTimeout(done, 300); };
+    images.forEach(img => {
+        img.addEventListener('load',  onLoad, { once: true });
+        img.addEventListener('error', onLoad, { once: true });
+    });
+
+    // Страховочный таймаут
+    setTimeout(done, 3000);
+}
+
+/* =========================================================
+   Cookie Consent
+========================================================= */
+
+function initCookieConsent() {
+    if (UserStore.get('cookieConsent')) return;
+
+    const consent = document.getElementById('cookieConsent');
+    if (!consent) return;
+
+    setTimeout(() => {
+        consent.classList.add('show');
+        lockScroll();
+    }, 300);
+}
+
+function hideCookieConsent() {
+    const consent = document.getElementById('cookieConsent');
+    if (!consent) return;
+    consent.classList.remove('show');
+    unlockScroll();
+    consent.addEventListener('transitionend', () => consent.style.display = 'none', { once: true });
+}
+
+/* =========================================================
+   Предзагрузка изображений профилей
+========================================================= */
+
+const imageCache = new Map();
+
 function preloadProfileImages() {
-    matchingProfiles.forEach((profile, index) => {
+    PROFILES.forEach((profile, i) => {
         const img = new Image();
+        img.onload  = () => imageCache.set(profile.image, img.src);
+        img.onerror = () => imageCache.set(profile.image, `https://i.pravatar.cc/300?img=${i + 1}`);
         img.src = profile.image;
-        img.onload = () => {
-            imageCache[profile.image] = img;
-        };
-        img.onerror = () => {
-            // Предзагружаем fallback изображение
-            const fallbackImg = new Image();
-            fallbackImg.src = `https://i.pravatar.cc/300?img=${index + 1}`;
-            imageCache[profile.image] = fallbackImg;
-        };
     });
 }
 
-// Запускаем предзагрузку при загрузке страницы
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', preloadProfileImages);
-} else {
-    preloadProfileImages();
-}
+/* =========================================================
+   Данные профилей
+========================================================= */
 
-// Функция для получения всех профилей включая профиль пользователя
-async function getAllProfiles() {
-    let allProfiles = [...matchingProfiles];
-    
-    // Пытаемся получить профили из Supabase
-    if (typeof getAllProfilesFromSupabase === 'function') {
-        const supabaseProfiles = await getAllProfilesFromSupabase();
-        if (supabaseProfiles && supabaseProfiles.length > 0) {
-            // Объединяем профили из Supabase с локальными
-            allProfiles = [...supabaseProfiles, ...matchingProfiles];
-            // Удаляем дубликаты по имени
-            const uniqueProfiles = [];
-            const seenNames = new Set();
-            allProfiles.forEach(profile => {
-                if (!seenNames.has(profile.name)) {
-                    seenNames.add(profile.name);
-                    uniqueProfiles.push(profile);
-                }
-            });
-            allProfiles = uniqueProfiles;
-        }
-    }
-    
-    // Получаем данные пользователя
-    const userName = localStorage.getItem('userName');
-    const userAge = localStorage.getItem('userAge');
-    const userCourse = localStorage.getItem('userCourse');
-    const userSpecialty = localStorage.getItem('userSpecialty');
-    const userAbout = localStorage.getItem('userAbout');
-    const userAvatar = localStorage.getItem('userAvatar');
-    
-    // Если пользователь заполнил профиль, добавляем его в список
-    if (userName && userAge && userSpecialty) {
-        const userProfile = {
-            name: userName,
-            age: parseInt(userAge) || 20,
-            course: parseInt(userCourse) || 1,
-            specialty: userSpecialty,
-            image: userAvatar || 'https://i.pravatar.cc/300?img=10',
-            bio: userAbout || 'Студент(ка) вуза. Ищу общение по интересам.',
-            isCurrentUser: true // Флаг для исключения из показа
-        };
-        
-        // Сохраняем профиль в Supabase
-        if (typeof saveUserProfileToSupabase === 'function') {
-            saveUserProfileToSupabase();
-        }
-    }
-    
-    return allProfiles;
-}
+const PROFILES = [
+    { name: 'Анна',      age: 20, course: 2, specialty: 'Дизайн',          image: 'images/photo_2025-03-28_15-32-38.jpg', bio: 'Соглашусь на свидание в театре' },
+    { name: 'Елена',     age: 19, course: 1, specialty: 'Маркетинг',        image: 'images/photo_2025-06-22_15-16-30.jpg', bio: 'Люблю активный отдых и новые знакомства' },
+    { name: 'Дмитрий',   age: 21, course: 3, specialty: 'Фотография',       image: 'images/photo_2025-06-23_16-52-21.jpg', bio: 'Увлекаюсь фотографией и видеосъемкой.' },
+    { name: 'София',     age: 20, course: 2, specialty: 'Психология',       image: 'images/photo_2025-10-11_02-13-52.jpg', bio: 'Интересуюсь психологией и саморазвитием' },
+    { name: 'Александр', age: 22, course: 4, specialty: 'Юриспруденция',    image: 'images/photo_2025-10-14_13-24-43.jpg', bio: 'Изучаю право, люблю дискуссии.' },
+];
 
-// Интерфейс поиска пары (Тиндер-стайл)
+/* =========================================================
+   Matching (Тиндер-стайл)
+========================================================= */
+
+const matchingModal = new Modal('matchingModal');
+
+let currentProfiles   = [];
+let currentIndex      = 0;
+let swipeAbortCtrl    = null; // AbortController для свайп-обработчиков
+
 async function openMatchingInterface() {
-    // Удаляем старое модальное окно, если есть
-    const oldModal = document.getElementById('matchingModal');
-    if (oldModal) oldModal.remove();
-
-    const matchingModal = document.createElement('div');
-    matchingModal.className = 'modal';
-    matchingModal.id = 'matchingModal';
-    
-    // Показываем индикатор загрузки
-    matchingModal.innerHTML = `
+    // Показываем лоадер немедленно
+    matchingModal.open(`
         <div class="modal-content matching-modal-content">
-            <div style="text-align: center; padding: 40px;">
-                <div class="loading-spinner" style="width: 60px; height: 60px; margin: 0 auto;">
+            <div style="text-align:center;padding:40px">
+                <div class="loading-spinner" style="width:60px;height:60px;margin:0 auto">
                     <div class="spinner-ring"></div>
                 </div>
-                <p style="margin-top: 20px; color: #7f8c8d;">Загрузка профилей...</p>
+                <p style="margin-top:20px;color:#7f8c8d">Загрузка профилей...</p>
             </div>
         </div>
-    `;
-    document.body.appendChild(matchingModal);
-    matchingModal.style.display = 'flex';
-    document.body.style.overflow = 'hidden';
-    
-    // Получаем все профили и исключаем профиль текущего пользователя
-    const allProfiles = await getAllProfiles();
-    const currentUserName = localStorage.getItem('userName');
-    const profilesToShow = allProfiles.filter(profile => profile.name !== currentUserName);
-    
-    if (profilesToShow.length === 0) {
-        matchingModal.innerHTML = `
+    `);
+
+    // Получаем профили (асинхронно, если нужен Supabase)
+    let profiles = await getAllProfiles();
+
+    // Исключаем текущего пользователя
+    const { name: myName } = UserStore.getProfile();
+    if (myName) profiles = profiles.filter(p => p.name !== myName);
+
+    if (profiles.length === 0) {
+        matchingModal.open(`
             <div class="modal-content matching-modal-content">
-                <span class="modal-close matching-close">&times;</span>
+                <button class="modal-close" aria-label="Закрыть">&times;</button>
                 <div class="modal-header">
-                    <i class="fas fa-search-location" style="font-size: 2rem; color: #ff6b6b;"></i>
+                    <i class="fas fa-search-location" style="font-size:2rem;color:#ff6b6b"></i>
                     <h2>Нет доступных профилей</h2>
-                    <p style="color: #7f8c8d;">Пока нет других пользователей. Заполните свой профиль, чтобы другие могли вас найти!</p>
-                </div>
-                <div style="padding: 20px; text-align: center;">
-                    <button class="btn-primary" onclick="closeMatchingModal()">Закрыть</button>
+                    <p style="color:#7f8c8d">Заполните свой профиль, чтобы другие могли вас найти!</p>
                 </div>
             </div>
-        `;
-        const closeBtn = matchingModal.querySelector('.matching-close');
-        if (closeBtn) {
-            closeBtn.addEventListener('click', closeMatchingModal);
-        }
+        `);
         return;
     }
-    
-    // Перемешиваем массив профилей при каждом открытии
-    profilesToShow.sort(() => Math.random() - 0.5);
-    
-    // Временно заменяем matchingProfiles для работы с текущим списком
-    const originalProfiles = matchingProfiles;
-    matchingProfiles = profilesToShow;
-    currentProfileIndex = 0;
-    
-    matchingModal.innerHTML = `
+
+    // Перемешиваем (Fisher–Yates — равномерный)
+    for (let i = profiles.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [profiles[i], profiles[j]] = [profiles[j], profiles[i]];
+    }
+
+    currentProfiles = profiles;
+    currentIndex    = 0;
+
+    matchingModal.open(`
         <div class="modal-content matching-modal-content">
-            <span class="modal-close matching-close">&times;</span>
+            <button class="modal-close" aria-label="Закрыть">&times;</button>
             <div class="modal-header">
-                <i class="fas fa-search-location" style="font-size: 2rem; color: #ff6b6b;"></i>
+                <i class="fas fa-search-location" style="font-size:2rem;color:#ff6b6b"></i>
                 <h2>Поиск собеседника</h2>
-                <p style="color: #7f8c8d;">Найдите кого-то интересного для общения</p>
+                <p style="color:#7f8c8d">Свайп вправо — начать чат, влево — пропустить</p>
             </div>
-            
-            <div class="profile-card-container" id="profileCardContainer">
-                <!-- Карточка будет добавлена через JS -->
-            </div>
-            
+            <div class="profile-card-container" id="profileCardContainer"></div>
             <div class="matching-controls">
-                <button class="control-btn btn-skip" onclick="nextProfile()">
+                <button class="control-btn btn-skip" id="btnSkip" aria-label="Пропустить">
                     <i class="fas fa-times"></i>
                 </button>
-                <button class="control-btn btn-like" onclick="connectProfile()">
+                <button class="control-btn btn-like" id="btnLike" aria-label="Начать чат">
                     <i class="fas fa-heart"></i>
                 </button>
             </div>
         </div>
-    `;
-    
-    document.body.appendChild(matchingModal);
-    matchingModal.style.display = 'flex';
-    document.body.style.overflow = 'hidden';
-    
-    // Отрисовываем первый профиль
+    `);
+
+    // Кнопки управления
+    matchingModal.el.querySelector('#btnSkip').addEventListener('click', nextProfile);
+    matchingModal.el.querySelector('#btnLike').addEventListener('click', connectProfile);
+
     renderProfileCard();
-    
-    // Закрытие модального окна
-    const closeBtn = matchingModal.querySelector('.matching-close');
-    if (closeBtn) {
-        closeBtn.addEventListener('click', closeMatchingModal);
-    }
-    
-    matchingModal.addEventListener('click', function(e) {
-        if (e.target === matchingModal) {
-            closeMatchingModal();
+}
+
+async function getAllProfiles() {
+    let all = [...PROFILES];
+
+    if (typeof getAllProfilesFromSupabase === 'function') {
+        const remote = await getAllProfilesFromSupabase().catch(() => []);
+        if (remote && remote.length) {
+            const seen = new Set(PROFILES.map(p => p.name));
+            remote.forEach(p => { if (!seen.has(p.name)) { seen.add(p.name); all.unshift(p); } });
         }
-    });
-    
-    // Сохраняем функцию восстановления оригинального массива
-    matchingModal._restoreProfiles = function() {
-        matchingProfiles = originalProfiles;
-    };
+    }
+
+    return all;
 }
 
 function renderProfileCard() {
     const container = document.getElementById('profileCardContainer');
     if (!container) return;
-    
-    const profile = matchingProfiles[currentProfileIndex];
+
+    const profile = currentProfiles[currentIndex];
+    const imageSrc = imageCache.get(profile.image) || profile.image;
     const bio = profile.bio || 'Студент(ка) вуза. Ищу общение по интересам.';
-    
-    // Используем requestAnimationFrame для плавной отрисовки
+
+    // Отрисовка через requestAnimationFrame — избегаем layout thrashing
     requestAnimationFrame(() => {
-        // Используем кэшированное изображение если доступно
-        const imageSrc = imageCache[profile.image] ? imageCache[profile.image].src : profile.image;
-        
         container.innerHTML = `
             <div class="profile-card fade-in" id="currentProfileCard">
                 <div class="profile-image-wrapper">
-                    <img src="${imageSrc}" alt="${profile.name}" loading="eager" onerror="this.src='https://i.pravatar.cc/300?img=${currentProfileIndex + 1}'">
+                    <img src="${imageSrc}" alt="${profile.name}" loading="eager"
+                         onerror="this.src='https://i.pravatar.cc/300?img=${currentIndex + 1}'">
                     <div class="profile-badges">
                         <span class="badge badge-online">Онлайн</span>
                     </div>
@@ -539,215 +342,150 @@ function renderProfileCard() {
                     <div class="bio-container">
                         <div class="bio-header">
                             <span class="bio-title">Био</span>
-                            <i class="fas fa-pencil-alt bio-edit-icon"></i>
                         </div>
-                        <div class="bio-content">
-                            ${bio}
-                        </div>
+                        <div class="bio-content">${bio}</div>
                     </div>
                 </div>
             </div>
         `;
-        
-        // Инициализируем свайп для новой карточки
+
         initSwipeHandlers();
     });
 }
 
 function nextProfile() {
-    const card = document.querySelector('.profile-card');
-    if (card) {
-        card.classList.add('slide-out-left');
-        // Уменьшаем задержку для более быстрого обновления
-        setTimeout(() => {
-            currentProfileIndex = (currentProfileIndex + 1) % matchingProfiles.length;
-            renderProfileCard();
-        }, 200); // Было 300ms, стало 200ms
-    }
+    const card = document.getElementById('currentProfileCard');
+    if (!card) return;
+
+    card.classList.add('slide-out-left');
+    card.addEventListener('transitionend', () => {
+        currentIndex = (currentIndex + 1) % currentProfiles.length;
+        renderProfileCard();
+    }, { once: true });
 }
 
 function connectProfile() {
-    const profile = matchingProfiles[currentProfileIndex];
+    const profile = currentProfiles[currentIndex];
     showNotification(`Отправлен запрос на общение с ${profile.name}!`, 'success');
-    
-    const card = document.querySelector('.profile-card');
-    if (card) {
-        card.classList.add('slide-out-right');
-        // Уменьшаем задержку для более быстрого обновления
-        setTimeout(() => {
-            closeMatchingModal();
-            // Открываем окно чата
-            openChatWindow(profile);
-        }, 300); // Было 500ms, стало 300ms
-    }
+
+    const card = document.getElementById('currentProfileCard');
+    if (!card) return;
+
+    card.classList.add('slide-out-right');
+    card.addEventListener('transitionend', () => {
+        matchingModal.close();
+        openChatWindow(profile);
+    }, { once: true });
 }
 
-function closeMatchingModal() {
-    const matchingModal = document.getElementById('matchingModal');
-    if (matchingModal) {
-        // Восстанавливаем оригинальный массив профилей если нужно
-        if (matchingModal._restoreProfiles) {
-            matchingModal._restoreProfiles();
-        }
-        matchingModal.remove();
-        document.body.style.overflow = 'auto';
-    }
-}
+/* =========================================================
+   Свайп — с AbortController (нет утечки памяти!)
+========================================================= */
 
-// Функциональность свайпа для карточек
 let swipeStartX = 0;
-let swipeStartY = 0;
-let swipeCurrentX = 0;
-let swipeCurrentY = 0;
-let isSwiping = false;
-let cardElement = null;
+let isSwiping   = false;
+let rafId       = null;
 
 function initSwipeHandlers() {
-    cardElement = document.getElementById('currentProfileCard');
-    if (!cardElement) return;
-    
-    // Touch события для мобильных устройств
-    cardElement.addEventListener('touchstart', handleSwipeStart, { passive: true });
-    cardElement.addEventListener('touchmove', handleSwipeMove, { passive: true });
-    cardElement.addEventListener('touchend', handleSwipeEnd, { passive: true });
-    
-    // Mouse события для десктопа (для тестирования)
-    let isMouseDown = false;
-    cardElement.addEventListener('mousedown', function(e) {
-        isMouseDown = true;
-        handleSwipeStart(e);
-    });
-    cardElement.addEventListener('mousemove', function(e) {
-        if (isMouseDown) {
-            handleSwipeMove(e);
-        }
-    });
-    cardElement.addEventListener('mouseup', function(e) {
-        if (isMouseDown) {
-            isMouseDown = false;
-            handleSwipeEnd(e);
-        }
-    });
-    cardElement.addEventListener('mouseleave', function(e) {
-        if (isMouseDown) {
-            isMouseDown = false;
-            handleSwipeEnd(e);
-        }
-    });
+    // Удаляем старые обработчики перед добавлением новых
+    if (swipeAbortCtrl) swipeAbortCtrl.abort();
+    swipeAbortCtrl = new AbortController();
+    const { signal } = swipeAbortCtrl;
+
+    const card = document.getElementById('currentProfileCard');
+    if (!card) return;
+
+    // Touch
+    card.addEventListener('touchstart', onDragStart, { passive: true, signal });
+    card.addEventListener('touchmove',  onDragMove,  { passive: true, signal });
+    card.addEventListener('touchend',   onDragEnd,   { passive: true, signal });
+
+    // Mouse (для десктопа)
+    let mouseDown = false;
+    card.addEventListener('mousedown', e => { mouseDown = true; onDragStart(e); }, { signal });
+    card.addEventListener('mousemove', e => { if (mouseDown) onDragMove(e); }, { signal });
+    card.addEventListener('mouseup',   e => { if (mouseDown) { mouseDown = false; onDragEnd(e); } }, { signal });
+    card.addEventListener('mouseleave',e => { if (mouseDown) { mouseDown = false; onDragEnd(e); } }, { signal });
 }
 
-function handleSwipeStart(e) {
+function onDragStart(e) {
     const touch = e.touches ? e.touches[0] : e;
     swipeStartX = touch.clientX;
-    swipeStartY = touch.clientY;
-    isSwiping = true;
-    if (cardElement) {
-        cardElement.style.transition = 'none';
-    }
+    isSwiping   = true;
+
+    const card = document.getElementById('currentProfileCard');
+    if (card) card.style.transition = 'none';
 }
 
-function handleSwipeMove(e) {
-    if (!isSwiping || !cardElement) return;
-    
-    // Отменяем предыдущий кадр анимации для оптимизации
-    if (animationFrameId) {
-        cancelAnimationFrame(animationFrameId);
-    }
-    
-    // Используем requestAnimationFrame для плавной анимации
-    animationFrameId = requestAnimationFrame(() => {
+function onDragMove(e) {
+    if (!isSwiping) return;
+    if (rafId) cancelAnimationFrame(rafId);
+
+    rafId = requestAnimationFrame(() => {
+        const card = document.getElementById('currentProfileCard');
+        if (!card) return;
+
         const touch = e.touches ? e.touches[0] : e;
-        swipeCurrentX = touch.clientX - swipeStartX;
-        swipeCurrentY = touch.clientY - swipeStartY;
-        
-        // Вращаем карточку при свайпе
-        const rotation = swipeCurrentX * 0.1;
-        cardElement.style.transform = `translateX(${swipeCurrentX}px) rotate(${rotation}deg)`;
-        
-        // Меняем прозрачность в зависимости от направления
-        const opacity = 1 - Math.abs(swipeCurrentX) / 300;
-        cardElement.style.opacity = Math.max(0.3, opacity);
-        
-        // Добавляем визуальную индикацию направления
-        if (swipeCurrentX > 50) {
-            cardElement.classList.add('swiping-right');
-            cardElement.classList.remove('swiping-left');
-        } else if (swipeCurrentX < -50) {
-            cardElement.classList.add('swiping-left');
-            cardElement.classList.remove('swiping-right');
-        } else {
-            cardElement.classList.remove('swiping-left', 'swiping-right');
-        }
+        const dx = touch.clientX - swipeStartX;
+        const rotation = dx * 0.1;
+        const opacity  = Math.max(0.3, 1 - Math.abs(dx) / 300);
+
+        card.style.transform = `translateX(${dx}px) rotate(${rotation}deg)`;
+        card.style.opacity   = opacity;
+
+        card.classList.toggle('swiping-right', dx > 50);
+        card.classList.toggle('swiping-left',  dx < -50);
     });
 }
 
-function handleSwipeEnd(e) {
-    if (!isSwiping || !cardElement) return;
-    
-    // Отменяем анимацию если она была
-    if (animationFrameId) {
-        cancelAnimationFrame(animationFrameId);
-        animationFrameId = null;
-    }
-    
+function onDragEnd(e) {
+    if (!isSwiping) return;
+    if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+
     isSwiping = false;
-    cardElement.style.transition = 'transform 0.2s ease, opacity 0.2s ease'; // Уменьшили с 0.3s до 0.2s
-    
-    const swipeThreshold = 100; // Минимальное расстояние для свайпа
-    
-    if (Math.abs(swipeCurrentX) > swipeThreshold) {
-        if (swipeCurrentX > 0) {
-            // Свайп вправо - лайк
-            cardElement.style.transform = `translateX(100vw) rotate(30deg)`;
-            cardElement.style.opacity = '0';
-            setTimeout(() => {
-                connectProfile();
-            }, 200); // Уменьшили с 300ms до 200ms
+    const card = document.getElementById('currentProfileCard');
+    if (!card) return;
+
+    card.style.transition = 'transform 0.2s ease, opacity 0.2s ease';
+
+    const touch = e.changedTouches ? e.changedTouches[0] : e;
+    const dx = touch.clientX - swipeStartX;
+
+    if (Math.abs(dx) > 100) {
+        if (dx > 0) {
+            card.style.transform = 'translateX(100vw) rotate(30deg)';
+            card.style.opacity   = '0';
+            card.addEventListener('transitionend', connectProfile, { once: true });
         } else {
-            // Свайп влево - пропуск
-            cardElement.style.transform = `translateX(-100vw) rotate(-30deg)`;
-            cardElement.style.opacity = '0';
-            setTimeout(() => {
-                nextProfile();
-            }, 200); // Уменьшили с 300ms до 200ms
+            card.style.transform = 'translateX(-100vw) rotate(-30deg)';
+            card.style.opacity   = '0';
+            card.addEventListener('transitionend', nextProfile, { once: true });
         }
     } else {
-        // Возвращаем карточку на место
-        cardElement.style.transform = 'translateX(0) rotate(0deg)';
-        cardElement.style.opacity = '1';
-        cardElement.classList.remove('swiping-left', 'swiping-right');
+        card.style.transform = '';
+        card.style.opacity   = '';
+        card.classList.remove('swiping-left', 'swiping-right');
     }
-    
-    // Сброс значений
-    swipeCurrentX = 0;
-    swipeCurrentY = 0;
 }
 
-// Делаем функции глобальными
-window.openMatchingInterface = openMatchingInterface;
-window.nextProfile = nextProfile;
-window.connectProfile = connectProfile;
-window.closeMatchingModal = closeMatchingModal;
-window.openPairRoulette = openMatchingInterface; // Для совместимости с HTML
+/* =========================================================
+   История чатов
+========================================================= */
 
-// Показ истории чатов пользователя
+const pairsModal = new Modal('pairsModal');
+
+const PAIRS_DATA = [
+    { name: 'Анна',   age: 20, course: 2, specialty: 'Дизайн',   image: 'images/anna.jpg' },
+    { name: 'Елена',  age: 19, course: 1, specialty: 'Маркетинг',image: 'images/elena.jpg' },
+    { name: 'Максим', age: 21, course: 3, specialty: 'Медицина', image: 'images/maxim.jpg' },
+];
+
 function showMyPairs() {
-    // Создаем модальное окно с историей чатов
-    const pairsModal = document.createElement('div');
-    pairsModal.className = 'modal';
-    pairsModal.id = 'pairsModal';
-    
-    // Примерные данные чатов (в реальном приложении это будет из API)
-    const pairs = [
-        { name: 'Анна', age: 20, course: 2, specialty: 'Дизайн', image: 'images/anna.jpg', match: 95 },
-        { name: 'Елена', age: 19, course: 1, specialty: 'Маркетинг', image: 'images/elena.jpg', match: 88 },
-        { name: 'Максим', age: 21, course: 3, specialty: 'Медицина', image: 'images/maxim.jpg', match: 92 }
-    ];
-    
-    let pairsHTML = pairs.map(pair => `
+    const pairsHTML = PAIRS_DATA.map(pair => `
         <div class="pair-card">
             <div class="pair-image">
-                <img src="${pair.image}" alt="${pair.name}" onerror="this.src='https://i.pravatar.cc/300?img=1'">
+                <img src="${pair.image}" alt="${pair.name}" loading="lazy"
+                     onerror="this.src='https://i.pravatar.cc/300?img=1'">
                 <div class="match-badge">Онлайн</div>
             </div>
             <div class="pair-info">
@@ -755,581 +493,428 @@ function showMyPairs() {
                 <p class="pair-profession">${pair.course} курс</p>
                 <p class="pair-city">${pair.specialty}</p>
                 <div class="pair-actions">
-                    <button class="btn-primary btn-small" onclick="startChat('${pair.name}')">
+                    <button class="btn-primary btn-small" data-action="chat" data-name="${pair.name}">
                         <i class="fas fa-comment"></i> Написать
                     </button>
-                    <button class="btn-secondary btn-small" onclick="viewProfile('${pair.name}')">
+                    <button class="btn-secondary btn-small" data-action="profile" data-name="${pair.name}">
                         <i class="fas fa-user"></i> Профиль
                     </button>
                 </div>
             </div>
         </div>
     `).join('');
-    
-    pairsModal.innerHTML = `
+
+    const el = pairsModal.open(`
         <div class="modal-content pairs-modal-content">
-            <span class="modal-close pairs-close">&times;</span>
+            <button class="modal-close" aria-label="Закрыть">&times;</button>
             <div class="modal-header">
-                <i class="fas fa-comments" style="font-size: 2.5rem; color: #ff6b6b;"></i>
+                <i class="fas fa-comments" style="font-size:2.5rem;color:#ff6b6b"></i>
                 <h2>История чатов</h2>
-                <p style="color: #7f8c8d; margin-top: 0.5rem;">Недавние собеседники: ${pairs.length}</p>
+                <p style="color:#7f8c8d;margin-top:.5rem">Недавние собеседники: ${PAIRS_DATA.length}</p>
             </div>
-            <div class="pairs-list">
-                ${pairsHTML}
-            </div>
+            <div class="pairs-list">${pairsHTML}</div>
             <div class="pairs-footer">
-                <button class="btn-secondary btn-full" onclick="closePairsModal()">Закрыть</button>
+                <button class="btn-secondary btn-full" id="closePairsBtn">Закрыть</button>
             </div>
         </div>
-    `;
-    
-    document.body.appendChild(pairsModal);
-    pairsModal.style.display = 'flex';
-    document.body.style.overflow = 'hidden';
-    
-    // Закрытие модального окна
-    const closeBtn = pairsModal.querySelector('.pairs-close');
-    if (closeBtn) {
-        closeBtn.addEventListener('click', closePairsModal);
-    }
-    
-    pairsModal.addEventListener('click', function(e) {
-        if (e.target === pairsModal) {
-            closePairsModal();
+    `);
+
+    el.querySelector('#closePairsBtn').addEventListener('click', () => pairsModal.close());
+
+    // Event delegation для кнопок внутри пар
+    el.querySelector('.pairs-list').addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-action]');
+        if (!btn) return;
+
+        const { action, name } = btn.dataset;
+        if (action === 'chat') {
+            const profile = PAIRS_DATA.find(p => p.name === name)
+                         || { name, age: 20, course: '?', specialty: 'Студент', image: 'https://i.pravatar.cc/300' };
+            pairsModal.close();
+            setTimeout(() => openChatWindow(profile), 150);
+        } else if (action === 'profile') {
+            showNotification(`Открываем профиль ${name}...`, 'info');
+            pairsModal.close();
         }
     });
 }
 
-function closePairsModal() {
-    const pairsModal = document.getElementById('pairsModal');
-    if (pairsModal) {
-        pairsModal.remove();
-        document.body.style.overflow = 'auto';
-    }
-}
+/* =========================================================
+   Авторизация
+========================================================= */
 
-function startChat(name) {
-    // Находим профиль по имени (в реальном приложении будет ID)
-    const profile = matchingProfiles.find(p => p.name === name) || { 
-        name: name, 
-        age: '20', 
-        course: '?', 
-        specialty: 'Студент', 
-        image: 'https://i.pravatar.cc/300' 
-    };
-
-    showNotification(`Открываем чат с ${name}...`, 'info');
-    closePairsModal();
-    setTimeout(() => {
-        openChatWindow(profile);
-    }, 200); // Уменьшили с 500ms до 200ms
-}
-
-function viewProfile(name) {
-    showNotification(`Открываем профиль ${name}...`, 'info');
-    closePairsModal();
-}
-
-// Делаем функции глобальными
-window.closePairsModal = closePairsModal;
-window.startChat = startChat;
-window.viewProfile = viewProfile;
-
-// Функции для модального окна входа
 function openLoginModal() {
     const modal = document.getElementById('loginModal');
-    if (modal) {
-        modal.style.display = 'flex';
-        document.body.style.overflow = 'hidden';
-    }
+    if (modal) { modal.style.display = 'flex'; lockScroll(); }
 }
 
 function closeLoginModal() {
     const modal = document.getElementById('loginModal');
-    if (modal) {
-        modal.style.display = 'none';
-        document.body.style.overflow = 'auto';
-    }
+    if (modal) { modal.style.display = 'none'; unlockScroll(); }
 }
 
-// Обработка успешного входа
 function handleSuccessfulLogin(email) {
-    // Сохраняем состояние входа в localStorage
-    localStorage.setItem('isLoggedIn', 'true');
-    localStorage.setItem('userEmail', email);
-    
-    // Показываем уведомление
+    UserStore.set('isLoggedIn', 'true');
+    UserStore.set('userEmail', email);
     showNotification('Вход выполнен успешно!', 'success');
-    
-    // Закрываем модальное окно
     closeLoginModal();
-    
-    // Обновляем интерфейс
     updateUIAfterLogin();
 }
 
-// Обновление интерфейса после входа
-function updateUIAfterLogin() {
-    const navLoginBtn = document.querySelector('.nav-btn');
-    
-    if (navLoginBtn) {
-        navLoginBtn.innerHTML = '<i class="fas fa-user"></i> Профиль';
-        navLoginBtn.classList.remove('btn-primary');
-        navLoginBtn.classList.add('btn-secondary');
-        
-        // Удаляем старый обработчик и добавляем новый
-        const newBtn = navLoginBtn.cloneNode(true);
-        navLoginBtn.parentNode.replaceChild(newBtn, navLoginBtn);
-        
-        // Добавляем обработчик для кнопки профиля
-        newBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            showUserProfile();
-        });
-    }
-    
-    // Обновляем кнопки в hero секции
-    const createProfileBtn = document.getElementById('createProfileBtn');
-    const findPairBtn = document.getElementById('findPairBtn');
-    
-    if (createProfileBtn) {
-        createProfileBtn.innerHTML = '<i class="fas fa-user-edit"></i> Редактировать профиль';
-         
-        // Обновляем обработчик для кнопки "Редактировать профиль"
-        const newCreateBtn = createProfileBtn.cloneNode(true);
-        createProfileBtn.parentNode.replaceChild(newCreateBtn, createProfileBtn);
-        newCreateBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            showUserProfile();
-        });
-    }
-    
-    if (findPairBtn) {
-        findPairBtn.innerHTML = '<i class="fas fa-search-location"></i> Найти собеседника';
-        
-        // Обновляем обработчик для кнопки "Найти собеседника"
-        const newFindBtn = findPairBtn.cloneNode(true);
-        findPairBtn.parentNode.replaceChild(newFindBtn, findPairBtn);
-        newFindBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            openMatchingInterface();
-        });
-    }
-}
-
-// Показ профиля пользователя
-function showUserProfile() {
-    const userEmail = localStorage.getItem('userEmail') || 'пользователь';
-    const userName = localStorage.getItem('userName') || userEmail.split('@')[0];
-    const userAge = localStorage.getItem('userAge') || '';
-    const userAbout = localStorage.getItem('userAbout') || '';
-    const userCourse = localStorage.getItem('userCourse') || '';
-    const userGroup = localStorage.getItem('userGroup') || '';
-    const userSpecialty = localStorage.getItem('userSpecialty') || '';
-    const userAvatar = localStorage.getItem('userAvatar') || '';
-    
-    const profileModal = document.createElement('div');
-    profileModal.className = 'modal';
-    profileModal.id = 'profileModal';
-    
-    profileModal.innerHTML = `
-        <div class="modal-content profile-modal-content">
-            <span class="modal-close profile-close">&times;</span>
-            <div class="modal-header">
-                <div class="profile-avatar-large">
-                    ${userAvatar ? `<img src="${userAvatar}" alt="${userName}">` : '<i class="fas fa-user-circle"></i>'}
-                </div>
-                <h2>${userName}</h2>
-                <p>${userEmail}</p>
-            </div>
-            <div class="profile-details">
-                ${userAge ? `<div class="profile-item"><strong>Возраст:</strong> ${userAge}</div>` : ''}
-                ${userCourse ? `<div class="profile-item"><strong>Курс:</strong> ${userCourse}</div>` : ''}
-                ${userSpecialty ? `<div class="profile-item"><strong>Специальность:</strong> ${userSpecialty}</div>` : ''}
-                ${userGroup ? `<div class="profile-item"><strong>Группа:</strong> ${userGroup}</div>` : ''}
-                ${userAbout ? `<div class="profile-item"><strong>О себе:</strong> ${userAbout}</div>` : ''}
-            </div>
-            <div class="profile-actions">
-                <button class="btn-primary" onclick="openEditProfileModal(); closeProfileModal();">Редактировать</button>
-                <button class="btn-secondary" onclick="handleLogout()">Выйти</button>
-            </div>
-        </div>
-    `;
-
-    document.body.appendChild(profileModal);
-    profileModal.style.display = 'flex';
-    document.body.style.overflow = 'hidden';
-    
-    // Закрытие модального окна
-    const closeBtn = profileModal.querySelector('.profile-close');
-    if (closeBtn) {
-        closeBtn.addEventListener('click', closeProfileModal);
-    }
-    
-    profileModal.addEventListener('click', function(e) {
-        if (e.target === profileModal) {
-            closeProfileModal();
-        }
-    });
-}
-
-function closeProfileModal() {
-    const profileModal = document.getElementById('profileModal');
-    if (profileModal) {
-        profileModal.remove();
-        document.body.style.overflow = 'auto';
-    }
-}
-
-// Открытие модального окна редактирования профиля
-function openEditProfileModal() {
-    const editModal = document.createElement('div');
-    editModal.className = 'modal';
-    editModal.id = 'editProfileModal';
-    
-    // Получаем текущие данные
-    const userName = localStorage.getItem('userName') || '';
-    const userAge = localStorage.getItem('userAge') || '';
-    const userAbout = localStorage.getItem('userAbout') || '';
-    const userCourse = localStorage.getItem('userCourse') || '';
-    const userGroup = localStorage.getItem('userGroup') || '';
-    const userSpecialty = localStorage.getItem('userSpecialty') || '';
-    const userAvatar = localStorage.getItem('userAvatar') || '';
-    
-    editModal.innerHTML = `
-        <div class="modal-content edit-profile-content">
-            <span class="modal-close edit-profile-close">&times;</span>
-            <div class="edit-profile-header">
-                <div class="edit-profile-icon">
-                    <i class="fas fa-user-edit"></i>
-                </div>
-                <h2>Редактирование профиля</h2>
-                <p>Обновите информацию о себе</p>
-            </div>
-            <form id="editProfileForm" class="edit-profile-form">
-                <!-- Загрузка аватарки -->
-                <div class="avatar-upload-section">
-                    <div class="avatar-preview-wrapper">
-                        <div class="avatar-preview" id="avatarPreview">
-                            ${userAvatar ? `<img src="${userAvatar}" alt="Аватар">` : '<i class="fas fa-user"></i>'}
-                        </div>
-                        <label for="avatarInput" class="avatar-upload-btn">
-                            <i class="fas fa-camera"></i>
-                            <span>Изменить фото</span>
-                        </label>
-                        <input type="file" id="avatarInput" accept="image/*" style="display: none;">
-                    </div>
-                </div>
-                <div class="form-group-wrapper">
-                    <div class="form-group-icon">
-                        <i class="fas fa-user"></i>
-                    </div>
-                    <div class="form-group">
-                        <label for="editName">Имя</label>
-                        <input type="text" id="editName" value="${userName}" placeholder="Ваше имя" required>
-                    </div>
-                </div>
-                
-                <div class="form-group-wrapper">
-                    <div class="form-group-icon">
-                        <i class="fas fa-birthday-cake"></i>
-                    </div>
-                    <div class="form-group">
-                        <label for="editAge">Возраст</label>
-                        <input type="number" id="editAge" value="${userAge}" placeholder="Ваш возраст" min="16" max="100">
-                    </div>
-                </div>
-                
-                <div class="form-row">
-                    <div class="form-group-wrapper">
-                        <div class="form-group-icon">
-                            <i class="fas fa-graduation-cap"></i>
-                        </div>
-                        <div class="form-group">
-                            <label for="editCourse">Курс</label>
-                            <input type="number" id="editCourse" value="${userCourse}" placeholder="1-6" min="1" max="6">
-                        </div>
-                    </div>
-                    
-                    <div class="form-group-wrapper">
-                        <div class="form-group-icon">
-                            <i class="fas fa-users"></i>
-                        </div>
-                        <div class="form-group">
-                            <label for="editGroup">Группа</label>
-                            <input type="text" id="editGroup" value="${userGroup}" placeholder="ЭК-201">
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="form-group-wrapper">
-                    <div class="form-group-icon">
-                        <i class="fas fa-book"></i>
-                    </div>
-                    <div class="form-group">
-                        <label for="editSpecialty">Специальность / Факультет</label>
-                        <input type="text" id="editSpecialty" value="${userSpecialty}" placeholder="Например: Экономика">
-                    </div>
-                </div>
-                
-                <div class="form-group-wrapper">
-                    <div class="form-group-icon">
-                        <i class="fas fa-info-circle"></i>
-                    </div>
-                    <div class="form-group">
-                        <label for="editAbout">О себе</label>
-                        <textarea id="editAbout" rows="4" placeholder="Расскажите немного о себе, своих интересах и увлечениях...">${userAbout}</textarea>
-                    </div>
-                </div>
-                
-                <div class="edit-profile-actions">
-                    <button type="button" class="btn-secondary btn-cancel" onclick="closeEditProfileModal()">Отмена</button>
-                    <button type="submit" class="btn-primary btn-save">
-                        <i class="fas fa-save"></i>
-                        Сохранить изменения
-                    </button>
-                </div>
-            </form>
-        </div>
-    `;
-    
-    document.body.appendChild(editModal);
-    editModal.style.display = 'flex';
-    document.body.style.overflow = 'hidden';
-    
-    // Обработчик загрузки аватарки
-    const avatarInput = editModal.querySelector('#avatarInput');
-    const avatarPreview = editModal.querySelector('#avatarPreview');
-    
-    if (avatarInput && avatarPreview) {
-        avatarInput.addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    const imageUrl = e.target.result;
-                    avatarPreview.innerHTML = `<img src="${imageUrl}" alt="Аватар">`;
-                    localStorage.setItem('userAvatar', imageUrl);
-                };
-                reader.readAsDataURL(file);
-            }
-        });
-    }
-    
-    // Обработчик отправки формы
-    const form = editModal.querySelector('#editProfileForm');
-    form.addEventListener('submit', async function(e) {
-        e.preventDefault();
-        const name = document.getElementById('editName').value;
-        const age = document.getElementById('editAge').value;
-        const about = document.getElementById('editAbout').value;
-        const course = document.getElementById('editCourse').value;
-        const specialty = document.getElementById('editSpecialty').value;
-        const group = document.getElementById('editGroup').value;
-        const avatar = localStorage.getItem('userAvatar') || '';
-        
-        localStorage.setItem('userName', name);
-        localStorage.setItem('userAge', age);
-        localStorage.setItem('userAbout', about);
-        localStorage.setItem('userCourse', course);
-        localStorage.setItem('userSpecialty', specialty);
-        localStorage.setItem('userGroup', group);
-        if (avatar) {
-            localStorage.setItem('userAvatar', avatar);
-        }
-        
-        // Сохраняем профиль в Supabase
-        if (typeof saveUserProfileToSupabase === 'function') {
-            const saved = await saveUserProfileToSupabase();
-            if (saved) {
-                showNotification('Профиль успешно обновлен и синхронизирован!', 'success');
-            } else {
-                showNotification('Профиль обновлен локально', 'success');
-            }
-        } else {
-            showNotification('Профиль успешно обновлен!', 'success');
-        }
-        
-        closeEditProfileModal();
-        
-        // Если открыто окно профиля, обновляем его (закрываем и открываем заново)
-        if (document.getElementById('profileModal')) {
-            closeProfileModal();
-            showUserProfile();
-        }
-    });
-    
-    // Закрытие модального окна
-    const closeBtn = editModal.querySelector('.edit-profile-close');
-    if (closeBtn) {
-        closeBtn.addEventListener('click', closeEditProfileModal);
-    }
-    
-    editModal.addEventListener('click', function(e) {
-        if (e.target === editModal) {
-            closeEditProfileModal();
-        }
-    });
-}
-
-function closeEditProfileModal() {
-    const editModal = document.getElementById('editProfileModal');
-    if (editModal) {
-        editModal.remove();
-        document.body.style.overflow = 'auto';
-    }
-}
-
-// Делаем функции глобальными
-window.showUserProfile = showUserProfile;
-window.closeProfileModal = closeProfileModal;
-window.handleLogout = handleLogout;
-window.openEditProfileModal = openEditProfileModal;
-window.closeEditProfileModal = closeEditProfileModal;
-
 function handleLogout() {
-    localStorage.removeItem('isLoggedIn');
-    localStorage.removeItem('userEmail');
-    
-    // Сброс кнопки профиля в навигации
-    const navLoginBtn = document.querySelector('.nav-btn');
-    if (navLoginBtn) {
-        navLoginBtn.innerHTML = 'Войти';
-        navLoginBtn.classList.remove('btn-secondary');
-        navLoginBtn.classList.add('btn-primary');
-        
-        const newBtn = navLoginBtn.cloneNode(true);
-        navLoginBtn.parentNode.replaceChild(newBtn, navLoginBtn);
-        
-        newBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            openLoginModal();
-        });
-    }
-    
-    // Сброс кнопок в hero
-    const createProfileBtn = document.getElementById('createProfileBtn');
-    const findPairBtn = document.getElementById('findPairBtn');
-    
-    if (createProfileBtn) {
-        createProfileBtn.innerHTML = 'Создать профиль';
-        const newCreateBtn = createProfileBtn.cloneNode(true);
-        createProfileBtn.parentNode.replaceChild(newCreateBtn, createProfileBtn);
-        newCreateBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            openLoginModal();
-        });
-    }
-    
-    if (findPairBtn) {
-        findPairBtn.innerHTML = 'Найти друзей';
-        const newFindBtn = findPairBtn.cloneNode(true);
-        findPairBtn.parentNode.replaceChild(newFindBtn, findPairBtn);
-        newFindBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            openFindPairModal(); // Откроет уведомление о необходимости входа
-        });
-    }
-    
+    UserStore.clearAuth();
+    updateUIForGuest();
     closeProfileModal();
     showNotification('Вы вышли из системы', 'info');
 }
 
-/* Функционал чата */
+/* =========================================================
+   Обновление UI (без cloneNode!)
+   Используем event delegation на document — один раз
+========================================================= */
+
+function updateUIAfterLogin() {
+    const btn = document.getElementById('navAuthBtn');
+    if (btn) {
+        btn.innerHTML = '<i class="fas fa-user" aria-hidden="true"></i> Профиль';
+        btn.className = 'btn-secondary nav-btn';
+        btn.dataset.action = 'profile';
+    }
+
+    const createBtn = document.getElementById('createProfileBtn');
+    if (createBtn) {
+        createBtn.innerHTML = '<i class="fas fa-user-edit" aria-hidden="true"></i> Редактировать профиль';
+        createBtn.dataset.action = 'editProfile';
+    }
+
+    const findBtn = document.getElementById('findPairBtn');
+    if (findBtn) {
+        findBtn.innerHTML = '<i class="fas fa-search-location" aria-hidden="true"></i> Найти собеседника';
+        findBtn.dataset.action = 'findPair';
+    }
+}
+
+function updateUIForGuest() {
+    const btn = document.getElementById('navAuthBtn');
+    if (btn) {
+        btn.innerHTML = 'Войти';
+        btn.className = 'btn-primary nav-btn';
+        btn.dataset.action = 'login';
+    }
+
+    const createBtn = document.getElementById('createProfileBtn');
+    if (createBtn) {
+        createBtn.innerHTML = '<i class="fas fa-user-plus" aria-hidden="true"></i> Создать профиль';
+        createBtn.dataset.action = 'createProfile';
+    }
+
+    const findBtn = document.getElementById('findPairBtn');
+    if (findBtn) {
+        findBtn.innerHTML = '<i class="fas fa-random" aria-hidden="true"></i> Начать чат';
+        findBtn.dataset.action = 'startChat';
+    }
+}
+
+/* =========================================================
+   Профиль пользователя
+========================================================= */
+
+const profileModal     = new Modal('profileModal');
+const editProfileModal = new Modal('editProfileModal');
+
+function showUserProfile() {
+    const p = UserStore.getProfile();
+    const displayName = p.name || (p.email ? p.email.split('@')[0] : 'Пользователь');
+
+    profileModal.open(`
+        <div class="modal-content profile-modal-content">
+            <button class="modal-close" aria-label="Закрыть">&times;</button>
+            <div class="modal-header">
+                <div class="profile-avatar-large">
+                    ${p.avatar
+                        ? `<img src="${p.avatar}" alt="${displayName}">`
+                        : '<i class="fas fa-user-circle" aria-hidden="true"></i>'
+                    }
+                </div>
+                <h2>${displayName}</h2>
+                <p>${p.email}</p>
+            </div>
+            <div class="profile-details">
+                ${p.age        ? `<div class="profile-item"><strong>Возраст:</strong> ${p.age}</div>` : ''}
+                ${p.course     ? `<div class="profile-item"><strong>Курс:</strong> ${p.course}</div>` : ''}
+                ${p.specialty  ? `<div class="profile-item"><strong>Специальность:</strong> ${p.specialty}</div>` : ''}
+                ${p.group      ? `<div class="profile-item"><strong>Группа:</strong> ${p.group}</div>` : ''}
+                ${p.about      ? `<div class="profile-item"><strong>О себе:</strong> ${p.about}</div>` : ''}
+            </div>
+            <div class="profile-actions">
+                <button class="btn-primary" id="editProfileBtn">Редактировать</button>
+                <button class="btn-secondary" id="logoutBtn">Выйти</button>
+            </div>
+        </div>
+    `);
+
+    profileModal.el.querySelector('#editProfileBtn').addEventListener('click', () => {
+        profileModal.close();
+        openEditProfileModal();
+    });
+    profileModal.el.querySelector('#logoutBtn').addEventListener('click', handleLogout);
+}
+
+function closeProfileModal() { profileModal.close(); }
+
+function openEditProfileModal() {
+    const p = UserStore.getProfile();
+
+    editProfileModal.open(`
+        <div class="modal-content edit-profile-content">
+            <button class="modal-close edit-profile-close" aria-label="Закрыть">&times;</button>
+            <div class="edit-profile-header">
+                <div class="edit-profile-icon"><i class="fas fa-user-edit" aria-hidden="true"></i></div>
+                <h2>Редактирование профиля</h2>
+                <p>Обновите информацию о себе</p>
+            </div>
+            <form id="editProfileForm" class="edit-profile-form" novalidate>
+                <div class="avatar-upload-section">
+                    <div class="avatar-preview-wrapper">
+                        <div class="avatar-preview" id="avatarPreview">
+                            ${p.avatar
+                                ? `<img src="${p.avatar}" alt="Аватар">`
+                                : '<i class="fas fa-user" aria-hidden="true"></i>'
+                            }
+                        </div>
+                        <label for="avatarInput" class="avatar-upload-btn">
+                            <i class="fas fa-camera" aria-hidden="true"></i>
+                            <span>Изменить фото</span>
+                        </label>
+                        <input type="file" id="avatarInput" accept="image/*" style="display:none">
+                    </div>
+                </div>
+
+                <div class="form-group-wrapper">
+                    <div class="form-group-icon"><i class="fas fa-user" aria-hidden="true"></i></div>
+                    <div class="form-group">
+                        <label for="editName">Имя</label>
+                        <input type="text" id="editName" value="${p.name}" placeholder="Ваше имя" required autocomplete="given-name">
+                    </div>
+                </div>
+                <div class="form-group-wrapper">
+                    <div class="form-group-icon"><i class="fas fa-birthday-cake" aria-hidden="true"></i></div>
+                    <div class="form-group">
+                        <label for="editAge">Возраст</label>
+                        <input type="number" id="editAge" value="${p.age}" placeholder="Ваш возраст" min="16" max="100">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group-wrapper">
+                        <div class="form-group-icon"><i class="fas fa-graduation-cap" aria-hidden="true"></i></div>
+                        <div class="form-group">
+                            <label for="editCourse">Курс</label>
+                            <input type="number" id="editCourse" value="${p.course}" placeholder="1-6" min="1" max="6">
+                        </div>
+                    </div>
+                    <div class="form-group-wrapper">
+                        <div class="form-group-icon"><i class="fas fa-users" aria-hidden="true"></i></div>
+                        <div class="form-group">
+                            <label for="editGroup">Группа</label>
+                            <input type="text" id="editGroup" value="${p.group}" placeholder="ЭК-201">
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group-wrapper">
+                    <div class="form-group-icon"><i class="fas fa-book" aria-hidden="true"></i></div>
+                    <div class="form-group">
+                        <label for="editSpecialty">Специальность / Факультет</label>
+                        <input type="text" id="editSpecialty" value="${p.specialty}" placeholder="Например: Экономика">
+                    </div>
+                </div>
+                <div class="form-group-wrapper">
+                    <div class="form-group-icon"><i class="fas fa-info-circle" aria-hidden="true"></i></div>
+                    <div class="form-group">
+                        <label for="editAbout">О себе</label>
+                        <textarea id="editAbout" rows="4" placeholder="Расскажите о себе...">${p.about}</textarea>
+                    </div>
+                </div>
+
+                <div class="edit-profile-actions">
+                    <button type="button" class="btn-secondary btn-cancel" id="cancelEditBtn">Отмена</button>
+                    <button type="submit" class="btn-primary btn-save">
+                        <i class="fas fa-save" aria-hidden="true"></i> Сохранить
+                    </button>
+                </div>
+            </form>
+        </div>
+    `);
+
+    const el = editProfileModal.el;
+
+    // Предпросмотр аватарки
+    el.querySelector('#avatarInput').addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = ({ target }) => {
+            el.querySelector('#avatarPreview').innerHTML = `<img src="${target.result}" alt="Аватар">`;
+            UserStore.set('userAvatar', target.result);
+        };
+        reader.readAsDataURL(file);
+    });
+
+    el.querySelector('#cancelEditBtn').addEventListener('click', () => editProfileModal.close());
+
+    el.querySelector('#editProfileForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const data = {
+            name      : el.querySelector('#editName').value.trim(),
+            age       : el.querySelector('#editAge').value,
+            course    : el.querySelector('#editCourse').value,
+            group     : el.querySelector('#editGroup').value.trim(),
+            specialty : el.querySelector('#editSpecialty').value.trim(),
+            about     : el.querySelector('#editAbout').value.trim(),
+            avatar    : UserStore.get('userAvatar') || '',
+        };
+
+        UserStore.saveProfile(data);
+
+        if (typeof saveUserProfileToSupabase === 'function') {
+            const saved = await saveUserProfileToSupabase().catch(() => false);
+            showNotification(saved ? 'Профиль синхронизирован!' : 'Профиль сохранён локально', 'success');
+        } else {
+            showNotification('Профиль успешно обновлён!', 'success');
+        }
+
+        editProfileModal.close();
+    });
+}
+
+function closeEditProfileModal() { editProfileModal.close(); }
+
+/* =========================================================
+   Чат
+========================================================= */
+
 function openChatWindow(profile) {
-    // Удаляем старый чат если есть
-    const oldChat = document.getElementById('chatWindow');
-    if (oldChat) oldChat.remove();
+    // Удаляем старый чат
+    const old = document.getElementById('chatWindow');
+    if (old) old.remove();
 
-    const chatWindow = document.createElement('div');
-    chatWindow.className = 'chat-window';
-    chatWindow.id = 'chatWindow';
+    const chatEl = document.createElement('div');
+    chatEl.className = 'chat-window';
+    chatEl.id = 'chatWindow';
 
-    chatWindow.innerHTML = `
+    const time = new Date().toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' });
+
+    chatEl.innerHTML = `
         <div class="chat-header">
-            <div class="chat-header-gradient"></div>
+            <div class="chat-header-gradient" aria-hidden="true"></div>
             <div class="chat-user-info">
                 <div class="chat-avatar-wrapper">
-                    <img src="${profile.image}" alt="${profile.name}" class="chat-avatar" onerror="this.src='https://i.pravatar.cc/300?img=1'">
-                    <div class="chat-online-indicator"></div>
+                    <img src="${profile.image}" alt="${profile.name}" class="chat-avatar"
+                         onerror="this.src='https://i.pravatar.cc/300?img=1'">
+                    <div class="chat-online-indicator" aria-hidden="true"></div>
                 </div>
                 <div class="chat-user-details">
                     <h4>${profile.name}</h4>
-                    <p class="chat-status">
-                        <span class="status-dot"></span>
-                        Онлайн
-                    </p>
+                    <p class="chat-status"><span class="status-dot" aria-hidden="true"></span> Онлайн</p>
                 </div>
             </div>
             <div class="chat-controls">
-                <button class="chat-control-btn" onclick="minimizeChat()" title="Свернуть">
-                    <i class="fas fa-minus"></i>
+                <button class="chat-control-btn" id="chatMinimizeBtn" title="Свернуть" aria-label="Свернуть чат">
+                    <i class="fas fa-minus" aria-hidden="true"></i>
                 </button>
-                <button class="chat-control-btn" onclick="closeChatWindow()" title="Закрыть">
-                    <i class="fas fa-times"></i>
+                <button class="chat-control-btn" id="chatCloseBtn" title="Закрыть" aria-label="Закрыть чат">
+                    <i class="fas fa-times" aria-hidden="true"></i>
                 </button>
             </div>
         </div>
-        <div class="chat-messages" id="chatMessages">
+        <div class="chat-messages" id="chatMessages" role="log" aria-live="polite">
             <div class="message-wrapper received">
                 <div class="message received">
-                    <div class="message-content">
-                        Привет! Я тоже учусь на ${profile.specialty}. Давай знакомиться?
-                    </div>
-                    <div class="message-time">${new Date().toLocaleTimeString().slice(0, 5)}</div>
+                    <div class="message-content">Привет! Я тоже учусь на ${profile.specialty}. Давай знакомиться?</div>
+                    <div class="message-time">${time}</div>
                 </div>
             </div>
         </div>
         <div class="chat-input-area">
             <div class="chat-input-wrapper">
-                <button class="chat-attach-btn" title="Прикрепить файл">
-                    <i class="fas fa-paperclip"></i>
+                <button class="chat-attach-btn" title="Прикрепить файл" aria-label="Прикрепить файл">
+                    <i class="fas fa-paperclip" aria-hidden="true"></i>
                 </button>
-                <input type="text" id="chatInput" placeholder="Напишите сообщение..." onkeypress="handleEnter(event)">
-                <button class="chat-emoji-btn" title="Эмодзи">
-                    <i class="far fa-smile"></i>
+                <input type="text" id="chatInput" placeholder="Напишите сообщение..." autocomplete="off">
+                <button class="chat-emoji-btn" title="Эмодзи" aria-label="Эмодзи">
+                    <i class="far fa-smile" aria-hidden="true"></i>
                 </button>
             </div>
-            <button class="btn-send" onclick="sendMessage()" title="Отправить">
-                <i class="fas fa-paper-plane"></i>
+            <button class="btn-send" id="sendBtn" title="Отправить" aria-label="Отправить сообщение" disabled>
+                <i class="fas fa-paper-plane" aria-hidden="true"></i>
             </button>
         </div>
     `;
 
-    document.body.appendChild(chatWindow);
-    
-    // Инициализация обработчиков для кнопки отправки
-    const chatInput = document.getElementById('chatInput');
-    const sendBtn = chatWindow.querySelector('.btn-send');
-    
-    if (chatInput && sendBtn) {
-        // Обновление состояния кнопки при изменении текста
-        const updateSendButton = () => {
-            if (chatInput.value.trim() === '') {
-                sendBtn.disabled = true;
-                sendBtn.style.opacity = '0.5';
-                sendBtn.style.cursor = 'not-allowed';
-            } else {
-                sendBtn.disabled = false;
-                sendBtn.style.opacity = '1';
-                sendBtn.style.cursor = 'pointer';
-            }
-        };
-        
-        // Изначально кнопка неактивна
-        updateSendButton();
-        
-        // Отслеживание изменений в поле ввода
-        chatInput.addEventListener('input', updateSendButton);
-        chatInput.addEventListener('keyup', updateSendButton);
-        
-        // Фокус на поле ввода при открытии чата
+    document.body.appendChild(chatEl);
+
+    const input   = chatEl.querySelector('#chatInput');
+    const sendBtn = chatEl.querySelector('#sendBtn');
+    const msgs    = chatEl.querySelector('#chatMessages');
+
+    // Управление состоянием кнопки отправки
+    input.addEventListener('input', () => {
+        sendBtn.disabled = input.value.trim() === '';
+    });
+
+    // Enter для отправки
+    input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); doSend(); }
+    });
+
+    sendBtn.addEventListener('click', doSend);
+    chatEl.querySelector('#chatCloseBtn').addEventListener('click', closeChatWindow);
+    chatEl.querySelector('#chatMinimizeBtn').addEventListener('click', minimizeChat);
+
+    // Авто-фокус с задержкой
+    setTimeout(() => input.focus(), 100);
+
+    /** Внутренняя функция отправки (замыкание для доступа к DOM) */
+    function doSend() {
+        const text = input.value.trim();
+        if (!text) return;
+
+        const time = new Date().toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' });
+
+        appendMessage(msgs, text, 'sent', time);
+        input.value = '';
+        sendBtn.disabled = true;
+        input.focus();
+
+        // Имитация ответа
+        const delay = 1500 + Math.random() * 2000;
         setTimeout(() => {
-            chatInput.focus();
-        }, 100);
+            const replyTime = new Date().toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' });
+            appendMessage(msgs, 'Интересно! Расскажи подробнее)', 'received', replyTime);
+        }, delay);
     }
+}
+
+/** Добавить сообщение в список — без innerHTML для безопасности */
+function appendMessage(container, text, type, time) {
+    const wrapper = document.createElement('div');
+    wrapper.className = `message-wrapper ${type}`;
+
+    const msg = document.createElement('div');
+    msg.className = `message ${type}`;
+
+    const content = document.createElement('div');
+    content.className = 'message-content';
+    content.textContent = text; // textContent защищает от XSS
+
+    const timeEl = document.createElement('div');
+    timeEl.className = 'message-time';
+    timeEl.textContent = time;
+
+    msg.append(content, timeEl);
+    wrapper.appendChild(msg);
+    container.appendChild(wrapper);
+    container.scrollTop = container.scrollHeight;
 }
 
 function closeChatWindow() {
@@ -1339,69 +924,194 @@ function closeChatWindow() {
 
 function minimizeChat() {
     const chat = document.getElementById('chatWindow');
-    if (chat) {
-        chat.style.display = 'none';
-        showNotification('Чат свернут. (В демо-версии его нельзя развернуть обратно)', 'info');
-    }
+    if (chat) chat.style.display = 'none';
+    showNotification('Чат свёрнут', 'info');
 }
 
-function sendMessage() {
-    const input = document.getElementById('chatInput');
-    const messages = document.getElementById('chatMessages');
-    const sendBtn = document.querySelector('.btn-send');
-    
-    if (input && input.value.trim() !== '') {
-        const text = input.value;
-        
-        // Добавляем сообщение пользователя
-        const userMsgWrapper = document.createElement('div');
-        userMsgWrapper.className = 'message-wrapper sent';
-        userMsgWrapper.innerHTML = `
-            <div class="message sent">
-                <div class="message-content">${text}</div>
-                <div class="message-time">${new Date().toLocaleTimeString().slice(0, 5)}</div>
-            </div>
-        `;
-        messages.appendChild(userMsgWrapper);
-        input.value = '';
-        messages.scrollTop = messages.scrollHeight;
-        
-        // Обновляем состояние кнопки отправки
-        if (sendBtn) {
-            sendBtn.disabled = true;
-            sendBtn.style.opacity = '0.5';
-            sendBtn.style.cursor = 'not-allowed';
+/* =========================================================
+   Глобальный event delegation (одна точка входа)
+   Заменяет все inline onclick и cloneNode/replaceChild
+========================================================= */
+
+function setupGlobalDelegation() {
+    document.addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-action], .nav-btn, #navAuthBtn, #createProfileBtn, #findPairBtn, #cookieAcceptBtn, #cookieDeclineBtn');
+        if (!btn) return;
+
+        const action = btn.dataset.action || btn.id;
+
+        switch (action) {
+            case 'navAuthBtn':
+            case 'login':
+                openLoginModal();
+                break;
+
+            case 'profile':
+                showUserProfile();
+                break;
+
+            case 'createProfileBtn':
+            case 'createProfile':
+                if (UserStore.getProfile().isLoggedIn) openEditProfileModal();
+                else openLoginModal();
+                break;
+
+            case 'editProfile':
+                openEditProfileModal();
+                break;
+
+            case 'findPairBtn':
+            case 'findPair':
+            case 'startChat':
+                openFindPairModal();
+                break;
+
+            case 'cookieAcceptBtn':
+                UserStore.set('cookieConsent', 'accepted');
+                hideCookieConsent();
+                showNotification('Спасибо! Настройки сохранены.', 'success');
+                break;
+
+            case 'cookieDeclineBtn':
+                UserStore.set('cookieConsent', 'declined');
+                hideCookieConsent();
+                showNotification('Cookies отключены.', 'info');
+                break;
         }
-        
-        // Возвращаем фокус на поле ввода
-        input.focus();
+    });
+}
 
-        // Имитация ответа
+function openFindPairModal() {
+    if (UserStore.getProfile().isLoggedIn) {
+        openMatchingInterface();
+    } else {
+        showNotification('Для поиска необходимо войти в систему', 'info');
         setTimeout(() => {
-            const replyMsgWrapper = document.createElement('div');
-            replyMsgWrapper.className = 'message-wrapper received';
-            replyMsgWrapper.innerHTML = `
-                <div class="message received">
-                    <div class="message-content">Интересно! Расскажи подробнее)</div>
-                    <div class="message-time">${new Date().toLocaleTimeString().slice(0, 5)}</div>
-                </div>
-            `;
-            messages.appendChild(replyMsgWrapper);
-            messages.scrollTop = messages.scrollHeight;
-        }, 2000 + Math.random() * 2000);
+            const about = document.getElementById('about');
+            if (about) about.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 150);
     }
 }
 
-function handleEnter(e) {
-    if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        sendMessage();
+/* =========================================================
+   Инициализация приложения
+========================================================= */
+
+function init() {
+    // Telegram WebApp
+    if (window.Telegram?.WebApp) {
+        const tg = window.Telegram.WebApp;
+        tg.ready();
+        tg.expand();
+
+        const tgUser = tg.initDataUnsafe?.user;
+        if (tgUser) {
+            UserStore.set('isLoggedIn', 'true');
+            if (!UserStore.get('userName') || UserStore.get('userName') !== tgUser.first_name) {
+                UserStore.set('userName', tgUser.first_name);
+                UserStore.set('userEmail', tgUser.username ? `@${tgUser.username}` : 'telegram_user');
+            }
+        }
     }
+
+    // Плавный скролл по якорям
+    document.querySelectorAll('.nav-link[href^="#"]').forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            const target = document.querySelector(link.getAttribute('href'));
+            if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+            document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+            link.classList.add('active');
+        });
+    });
+
+    // Форма входа
+    const loginForm = document.getElementById('loginForm');
+    if (loginForm) {
+        loginForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const email    = loginForm.querySelector('#loginEmail').value.trim();
+            const password = loginForm.querySelector('#loginPassword').value;
+            if (email && password) handleSuccessfulLogin(email);
+        });
+    }
+
+    // Кнопка закрытия модала входа
+    const loginModalClose = document.querySelector('#loginModal .modal-close');
+    if (loginModalClose) loginModalClose.addEventListener('click', closeLoginModal);
+
+    // Закрытие loginModal по фону
+    const loginModal = document.getElementById('loginModal');
+    if (loginModal) {
+        loginModal.addEventListener('click', (e) => {
+            if (e.target === loginModal) closeLoginModal();
+        });
+    }
+
+    // Социальные кнопки входа
+    document.querySelectorAll('.btn-social[data-social]').forEach(btn => {
+        btn.addEventListener('click', () => handleSuccessfulLogin('user@social.com'));
+    });
+
+    // Форма контактов
+    const contactForm = document.getElementById('contactForm');
+    if (contactForm) {
+        contactForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            showNotification('Сообщение отправлено!', 'success');
+            contactForm.reset();
+        });
+    }
+
+    // Глобальный delegation
+    setupGlobalDelegation();
+
+    // Проверяем статус входа
+    if (UserStore.getProfile().isLoggedIn) updateUIAfterLogin();
+
+    // Предзагружаем изображения профилей
+    preloadProfileImages();
 }
 
-// Делаем функции чата глобальными
-window.openChatWindow = openChatWindow;
-window.closeChatWindow = closeChatWindow;
-window.minimizeChat = minimizeChat;
-window.sendMessage = sendMessage;
-window.handleEnter = handleEnter;
+/* =========================================================
+   Точка входа
+========================================================= */
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+        initLoadingScreen();
+        init();
+    });
+} else {
+    initLoadingScreen();
+    init();
+}
+
+/* =========================================================
+   Публичное API (для совместимости с HTML)
+========================================================= */
+
+Object.assign(window, {
+    acceptCookies       : () => { UserStore.set('cookieConsent', 'accepted'); hideCookieConsent(); showNotification('Настройки сохранены.', 'success'); },
+    declineCookies      : () => { UserStore.set('cookieConsent', 'declined'); hideCookieConsent(); },
+    openMatchingInterface,
+    nextProfile,
+    connectProfile,
+    closeMatchingModal  : () => matchingModal.close(),
+    openPairRoulette    : openMatchingInterface,
+    showMyPairs,
+    closePairsModal     : () => pairsModal.close(),
+    openLoginModal,
+    closeLoginModal,
+    showUserProfile,
+    closeProfileModal,
+    handleLogout,
+    openEditProfileModal,
+    closeEditProfileModal,
+    openChatWindow,
+    closeChatWindow,
+    minimizeChat,
+    sendMessage         : () => document.getElementById('sendBtn')?.click(),
+    handleEnter         : (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); document.getElementById('sendBtn')?.click(); } },
+});

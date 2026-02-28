@@ -4,14 +4,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Connect Chat - Чат рулетка для студентов вуза</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link rel="stylesheet" href="styles.css?v=2.0">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Preconnect для ускорения загрузки внешних ресурсов -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+    <link rel="dns-prefetch" href="https://telegram.org">
+
+    <!-- Шрифты — только нужные начертания -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="styles.css?v=3.0">
 </head>
 <body>
     <!-- Экран загрузки -->
-    <div id="loadingScreen" class="loading-screen">
+    <div id="loadingScreen" class="loading-screen" aria-hidden="true">
         <div class="loading-content">
             <div class="loading-spinner">
                 <div class="spinner-ring"></div>
@@ -20,35 +27,35 @@
         </div>
     </div>
 
-    <!-- Диалог согласия на использование cookies -->
-    <div id="cookieConsent" class="cookie-consent">
+    <!-- Диалог согласия на cookies -->
+    <div id="cookieConsent" class="cookie-consent" role="dialog" aria-label="Согласие на cookies">
         <div class="cookie-consent-content">
             <div class="cookie-consent-header">
-                <i class="fas fa-cookie-bite"></i>
+                <i class="fas fa-cookie-bite" aria-hidden="true"></i>
                 <h3>Использование Cookie</h3>
             </div>
             <div class="cookie-consent-body">
-                <p>Мы используем cookies для сохранения вашей сессии и улучшения работы приложения. Продолжая использовать приложение, вы принимаете использование cookies.</p>
+                <p>Мы используем cookies для сохранения вашей сессии и улучшения работы приложения.</p>
             </div>
             <div class="cookie-consent-actions">
-                <button class="btn-cookie-decline" onclick="declineCookies()">Отклонить</button>
-                <button class="btn-cookie-accept" onclick="acceptCookies()">Принять</button>
+                <button class="btn-cookie-decline" id="cookieDeclineBtn">Отклонить</button>
+                <button class="btn-cookie-accept" id="cookieAcceptBtn">Принять</button>
             </div>
         </div>
     </div>
 
     <!-- Навигация -->
-    <nav class="navbar">
+    <nav class="navbar" role="navigation">
         <div class="nav-container">
             <div class="nav-brand">
-                <i class="fas fa-arrow-right"></i>
+                <i class="fas fa-arrow-right" aria-hidden="true"></i>
                 <span>Connect Chat</span>
             </div>
             <div class="nav-menu">
                 <a href="#home" class="nav-link active">Главная</a>
                 <a href="#about" class="nav-link">О нас</a>
                 <a href="#contact" class="nav-link">Контакты</a>
-                <button class="btn-primary nav-btn">Войти</button>
+                <button class="btn-primary nav-btn" id="navAuthBtn">Войти</button>
             </div>
         </div>
     </nav>
@@ -61,10 +68,10 @@
                     Чат рулетка для <span class="highlight">студентов</span> твоего вуза
                 </h1>
                 <p class="hero-subtitle">
-                    Connect Chat - случайные видеозвонки и чаты только со студентами. Общайся с однокурсниками,
+                    Connect Chat — случайные видеозвонки и чаты только со студентами. Общайся с однокурсниками,
                     находи единомышленников и заводи новые знакомства в безопасной среде!
                 </p>
-                <div class="hero-stats">
+                <div class="hero-stats" aria-label="Статистика">
                     <div class="stat">
                         <div class="stat-number">500+</div>
                         <div class="stat-label">Онлайн студентов</div>
@@ -80,33 +87,33 @@
                 </div>
                 <div class="hero-buttons">
                     <button type="button" class="btn-primary btn-large" id="createProfileBtn">
-                        <i class="fas fa-user-plus"></i>
+                        <i class="fas fa-user-plus" aria-hidden="true"></i>
                         Создать профиль
                     </button>
                     <button type="button" class="btn-secondary btn-large" id="findPairBtn">
-                        <i class="fas fa-random"></i>
+                        <i class="fas fa-random" aria-hidden="true"></i>
                         Начать чат
                     </button>
                 </div>
             </div>
-            <div class="hero-image">
+            <div class="hero-image" aria-hidden="true">
                 <div class="floating-cards">
                     <div class="card card-1">
-                        <img src="images/anna.jpg" alt="Профиль 1" onerror="this.src='https://i.pravatar.cc/300?img=33'">
+                        <img src="images/anna.jpg" alt="Анна" loading="lazy" onerror="this.src='https://i.pravatar.cc/300?img=33'">
                         <div class="card-info">
                             <h4>Анна, 20</h4>
                             <p>2 курс, Дизайн</p>
                         </div>
                     </div>
                     <div class="card card-2">
-                        <img src="images/elena.jpg" alt="Профиль 2" onerror="this.src='https://i.pravatar.cc/300?img=12'">
+                        <img src="images/elena.jpg" alt="Максим" loading="lazy" onerror="this.src='https://i.pravatar.cc/300?img=12'">
                         <div class="card-info">
                             <h4>Максим, 21</h4>
                             <p>3 курс, Программирование</p>
                         </div>
                     </div>
                     <div class="card card-3">
-                        <img src="images/maxim.jpg" alt="Профиль 3" onerror="this.src='https://i.pravatar.cc/300?img=47'">
+                        <img src="images/maxim.jpg" alt="Елена" loading="lazy" onerror="this.src='https://i.pravatar.cc/300?img=47'">
                         <div class="card-info">
                             <h4>Елена, 19</h4>
                             <p>1 курс, Маркетинг</p>
@@ -123,32 +130,24 @@
             <h2 class="section-title">Почему Connect Chat?</h2>
             <div class="about-grid">
                 <div class="about-card">
-                    <div class="about-icon">
-                        <i class="fas fa-graduation-cap"></i>
-                    </div>
+                    <div class="about-icon"><i class="fas fa-graduation-cap" aria-hidden="true"></i></div>
                     <h3>Только студенты</h3>
                     <p>Чат рулетка работает только для студентов твоего вуза. Верификация через студенческий билет гарантирует безопасность.</p>
                 </div>
                 <div class="about-card">
-                    <div class="about-icon">
-                        <i class="fas fa-random"></i>
-                    </div>
+                    <div class="about-icon"><i class="fas fa-random" aria-hidden="true"></i></div>
                     <h3>Случайные знакомства</h3>
                     <p>Крути рулетку и общайся со случайными студентами. Каждый раз новая встреча и новые возможности!</p>
                 </div>
                 <div class="about-card">
-                    <div class="about-icon">
-                        <i class="fas fa-video"></i>
-                    </div>
+                    <div class="about-icon"><i class="fas fa-video" aria-hidden="true"></i></div>
                     <h3>Видео и текст чаты</h3>
                     <p>Выбирай формат общения: видеозвонок или текстовый чат. Общайся так, как тебе удобно!</p>
                 </div>
                 <div class="about-card">
-                    <div class="about-icon">
-                        <i class="fas fa-shield-alt"></i>
-                    </div>
+                    <div class="about-icon"><i class="fas fa-shield-alt" aria-hidden="true"></i></div>
                     <h3>Безопасность</h3>
-                    <p>Модерация контента, возможность пожаловаться и заблокировать. Твоя безопасность - наш приоритет.</p>
+                    <p>Модерация контента, возможность пожаловаться и заблокировать. Твоя безопасность — наш приоритет.</p>
                 </div>
             </div>
         </div>
@@ -160,12 +159,12 @@
             <h2 class="section-title">Свяжитесь с нами</h2>
             <div class="contact-grid">
                 <div class="contact-form">
-                    <form id="contactForm">
+                    <form id="contactForm" novalidate>
                         <div class="form-group">
-                            <input type="text" name="name" placeholder="Ваше имя" required>
+                            <input type="text" name="name" placeholder="Ваше имя" required autocomplete="name">
                         </div>
                         <div class="form-group">
-                            <input type="email" name="email" placeholder="Email" required>
+                            <input type="email" name="email" placeholder="Email" required autocomplete="email">
                         </div>
                         <div class="form-group">
                             <textarea name="message" placeholder="Сообщение" rows="5" required></textarea>
@@ -175,24 +174,24 @@
                 </div>
                 <div class="contact-info">
                     <div class="contact-item">
-                        <i class="fas fa-envelope"></i>
+                        <i class="fas fa-envelope" aria-hidden="true"></i>
                         <div>
                             <h4>Email</h4>
-                            <p> mail@loveconnect.ru </p>
+                            <p>mail@loveconnect.ru</p>
                         </div>
                     </div>
                     <div class="contact-item">
-                        <i class="fas fa-phone"></i>
+                        <i class="fas fa-phone" aria-hidden="true"></i>
                         <div>
                             <h4>Телефон</h4>
-                            <p> Номер  </p>
+                            <p>Номер</p>
                         </div>
                     </div>
                     <div class="contact-item">
-                        <i class="fas fa-map-marker-alt"></i>
+                        <i class="fas fa-map-marker-alt" aria-hidden="true"></i>
                         <div>
                             <h4>Адрес</h4>
-                            <p> Краснодар, ул. Ставропольская, д. 149</p>
+                            <p>Краснодар, ул. Ставропольская, д. 149</p>
                         </div>
                     </div>
                 </div>
@@ -205,7 +204,7 @@
         <div class="container">
             <div class="footer-content">
                 <div class="footer-brand">
-                    <i class="fas fa-arrow-right"></i>
+                    <i class="fas fa-arrow-right" aria-hidden="true"></i>
                     <span>Connect Chat</span>
                 </div>
                 <div class="footer-links">
@@ -214,9 +213,9 @@
                     <a href="#">Политика конфиденциальности</a>
                 </div>
                 <div class="footer-social">
-                    <a href="#" class="social-link"><i class="fab fa-vk"></i></a>
-                    <a href="#" class="social-link"><i class="fab fa-telegram"></i></a>
-                    <a href="#" class="social-link"><i class="fab fa-instagram"></i></a>
+                    <a href="#" class="social-link" aria-label="VK"><i class="fab fa-vk"></i></a>
+                    <a href="#" class="social-link" aria-label="Telegram"><i class="fab fa-telegram"></i></a>
+                    <a href="#" class="social-link" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
                 </div>
             </div>
             <div class="footer-bottom">
@@ -225,22 +224,22 @@
         </div>
     </footer>
 
-    <!-- Модальное окно входа -->
-    <div id="loginModal" class="modal">
+    <!-- Модальное окно входа (статичное, только одно) -->
+    <div id="loginModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="loginModalTitle">
         <div class="modal-content">
-            <span class="modal-close">&times;</span>
+            <button class="modal-close" aria-label="Закрыть">&times;</button>
             <div class="modal-header">
-                <i class="fas fa-arrow-right"></i>
-                <h2>Вход в Connect Chat</h2>
+                <i class="fas fa-arrow-right" aria-hidden="true"></i>
+                <h2 id="loginModalTitle">Вход в Connect Chat</h2>
             </div>
-            <form id="loginForm" class="login-form">
+            <form id="loginForm" class="login-form" novalidate>
                 <div class="form-group">
                     <label for="loginEmail">Email или телефон</label>
-                    <input type="text" id="loginEmail" name="email" placeholder="Введите email или телефон" required>
+                    <input type="text" id="loginEmail" name="email" placeholder="Введите email или телефон" required autocomplete="username">
                 </div>
                 <div class="form-group">
                     <label for="loginPassword">Пароль</label>
-                    <input type="password" id="loginPassword" name="password" placeholder="Введите пароль" required>
+                    <input type="password" id="loginPassword" name="password" placeholder="Введите пароль" required autocomplete="current-password">
                 </div>
                 <div class="form-options">
                     <label class="checkbox-label">
@@ -250,17 +249,13 @@
                     <a href="#" class="forgot-password">Забыли пароль?</a>
                 </div>
                 <button type="submit" class="btn-primary btn-full">Войти</button>
-                <div class="form-divider">
-                    <span>или</span>
-                </div>
+                <div class="form-divider"><span>или</span></div>
                 <div class="social-login">
-                    <button type="button" class="btn-social vk">
-                        <i class="fab fa-vk"></i>
-                        Войти через VK
+                    <button type="button" class="btn-social vk" data-social="vk">
+                        <i class="fab fa-vk" aria-hidden="true"></i> Войти через VK
                     </button>
-                    <button type="button" class="btn-social telegram">
-                        <i class="fab fa-telegram"></i>
-                        Войти через Telegram
+                    <button type="button" class="btn-social telegram" data-social="telegram">
+                        <i class="fab fa-telegram" aria-hidden="true"></i> Войти через Telegram
                     </button>
                 </div>
                 <div class="form-footer">
@@ -270,6 +265,8 @@
         </div>
     </div>
 
-    <script src="script.js?v=2.0"></script>
+    <!-- Telegram WebApp SDK — defer, не блокирует рендер -->
+    <script src="https://telegram.org/js/telegram-web-app.js" defer></script>
+    <script src="script.js?v=3.0" defer></script>
 </body>
 </html>
